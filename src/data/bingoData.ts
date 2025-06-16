@@ -1,4 +1,3 @@
-
 export interface BingoIdea {
   ro: string;
   en: string;
@@ -129,7 +128,7 @@ export const bingoThemes: Record<string, BingoTheme> = {
       { ro: "Cineva manipulează", en: "Someone is manipulating" },
       { ro: "Paranoia crește", en: "Paranoia increases" },
       { ro: "Identitatea se schimbă", en: "Identity changes" },
-      { ro: "Realitatea se destramă", en "Reality breaks down" },
+      { ro: "Realitatea se destramă", en: "Reality breaks down" },
       { ro: "Cineva urmărește fără să existe", en: "Someone stalks but doesn't exist" },
       { ro: "Medicul psihiatru e suspect", en: "Psychiatrist is suspicious" },
       { ro: "Jurnalul revelă adevărul", en: "Diary reveals truth" },
@@ -355,7 +354,7 @@ export const bingoThemes: Record<string, BingoTheme> = {
       { ro: "Sărbătoarea sângeroasă", en: "Bloody celebration" },
       { ro: "Copiii dispar", en: "Children disappear" },
       { ro: "Biblioteca cu cărți blestemate", en: "Library with cursed books" },
-      { ro: "Sectanței devin violenți", en: "Cultists become violent" },
+      { ro: "Sectanții devin violenți", en: "Cultists become violent" },
       { ro: "Ființa din adâncuri", en: "Entity from depths" },
       { ro: "Sfârșitul lumii", en: "End of world" }
     ]
