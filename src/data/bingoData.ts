@@ -1,4 +1,3 @@
-
 export interface BingoIdea {
   ro: string;
   en: string;
@@ -103,11 +102,10 @@ export const bingoThemes: Record<string, BingoTheme> = {
       { ro: "Victima nu își amintește nimic", en: "Victim remembers nothing" }
     ]
   },
-  conjuring: {
-    name: { ro: "The Conjuring", en: "The Conjuring" },
+  haunted: {
+    name: { ro: "Casa Bântuită", en: "Haunted House" },
     ideas: [
-      { ro: "Warren-ii investighează", en: "The Warrens investigate" },
-      { ro: "Casa are istorie întunecată", en: "House has dark history" },
+      { ro: "Investigatori paranormali", en: "Paranormal investigators" },
       { ro: "Familia se mută într-o casă nouă", en: "Family moves to new house" },
       { ro: "Copiii văd lucruri înfricoșătoare", en: "Children see frightening things" },
       { ro: "Jocul de ascuns-găsit", en: "Hide and clap game" },
@@ -115,7 +113,7 @@ export const bingoThemes: Record<string, BingoTheme> = {
       { ro: "Bătăi în pereți", en: "Knocking on walls" },
       { ro: "Camera secretă/pivniță", en: "Secret room/basement" },
       { ro: "Victimă de vrăjitorie", en: "Witchcraft victim" },
-      { ro: "Árbol familiar blestemat", en: "Cursed family tree" },
+      { ro: "Família blestemată", en: "Cursed family" },
       { ro: "Mamă posedată", en: "Mother possessed" },
       { ro: "Copiii în pericol", en: "Children in danger" },
       { ro: "Oglinda ca portal", en: "Mirror as portal" },
@@ -130,11 +128,12 @@ export const bingoThemes: Record<string, BingoTheme> = {
       { ro: "Casa se scutură", en: "House shakes" },
       { ro: "Spiritul vrea să omoare", en: "Spirit wants to kill" },
       { ro: "Investigarea istoriei casei", en: "Investigating house history" },
-      { ro: "Final dramatic în pivniță", en: "Dramatic finale in basement" }
+      { ro: "Final dramatic în pivniță", en: "Dramatic finale in basement" },
+      { ro: "Familia fuge din casă", en: "Family flees the house" }
     ]
   },
-  annabelle: {
-    name: { ro: "Annabelle", en: "Annabelle" },
+  cursed_doll: {
+    name: { ro: "Păpușă Blestemată", en: "Cursed Doll" },
     ideas: [
       { ro: "Păpușa posedată", en: "Possessed doll" },
       { ro: "Păpușa își schimbă poziția", en: "Doll changes position" },
@@ -163,8 +162,8 @@ export const bingoThemes: Record<string, BingoTheme> = {
       { ro: "Proteție religioasă împotriva păpușii", en: "Religious protection against doll" }
     ]
   },
-  autopsy: {
-    name: { ro: "Autopsia lui Jane Doe", en: "Autopsy of Jane Doe" },
+  morgue: {
+    name: { ro: "Morgă/Cadavre", en: "Morgue/Corpses" },
     ideas: [
       { ro: "Cadavru misterios", en: "Mysterious corpse" },
       { ro: "Autopsia relevă lucruri stranii", en: "Autopsy reveals strange things" },
