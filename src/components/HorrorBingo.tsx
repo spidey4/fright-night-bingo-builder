@@ -1,12 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Skull, RefreshCw, Edit3, Save, X, Settings } from 'lucide-react';
+import { Skull, RefreshCw, Edit3, Save, X, Settings, Download } from 'lucide-react';
 import { bingoThemes, BingoIdea } from '@/data/bingoData';
+import StardustLogo from '@/components/StardustLogo';
+import { downloadBingoCard } from '@/utils/downloadCard';
 
 type Language = 'ro' | 'en';
 type CardSize = 3 | 4 | 5;
@@ -34,11 +35,13 @@ const HorrorBingo = () => {
       cardSize: "Mărimea cardului",
       generateCard: "Generează Card",
       resetCard: "Resetează Card",
+      downloadCard: "Descarcă Card",
       settings: "Setări",
       hideSettings: "Ascunde Setări",
       editCell: "Editează",
       saveCell: "Salvează",
-      cancelEdit: "Anulează"
+      cancelEdit: "Anulează",
+      madeFor: "făcut pentru iubita mea perfectă Elena"
     },
     en: {
       title: "Horror Bingo",
@@ -48,11 +51,13 @@ const HorrorBingo = () => {
       cardSize: "Card size",
       generateCard: "Generate Card",
       resetCard: "Reset Card",
+      downloadCard: "Download Card",
       settings: "Settings",
       hideSettings: "Hide Settings",
       editCell: "Edit",
       saveCell: "Save",
-      cancelEdit: "Cancel"
+      cancelEdit: "Cancel",
+      madeFor: "made for my perfect girlfriend Elena"
     }
   };
 
@@ -128,6 +133,10 @@ const HorrorBingo = () => {
     setBingoCard(prev => prev.map(cell => ({ ...cell, isChecked: false })));
   };
 
+  const handleDownload = () => {
+    downloadBingoCard(cardSize, language);
+  };
+
   useEffect(() => {
     if (bingoCard.length > 0) {
       generateBingoCard();
@@ -143,14 +152,18 @@ const HorrorBingo = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Skull className="w-12 h-12 text-red-500" />
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent">
-              {t.title}
-            </h1>
-            <Skull className="w-12 h-12 text-red-500" />
+          <div className="flex items-center justify-center gap-6 mb-4">
+            <StardustLogo />
+            <div className="flex items-center gap-3">
+              <Skull className="w-12 h-12 text-red-500" />
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent">
+                {t.title}
+              </h1>
+              <Skull className="w-12 h-12 text-red-500" />
+            </div>
           </div>
-          <p className="text-xl text-gray-300 mb-6">{t.subtitle}</p>
+          <p className="text-xl text-gray-300 mb-4">{t.subtitle}</p>
+          <p className="text-sm text-pink-300 italic mb-6">✨ {t.madeFor} ✨</p>
           
           <Button
             onClick={() => setShowSettings(!showSettings)}
@@ -220,7 +233,7 @@ const HorrorBingo = () => {
                 </div>
               </div>
 
-              <div className="flex gap-4 mt-6">
+              <div className="flex gap-4 mt-6 flex-wrap">
                 <Button 
                   onClick={generateBingoCard}
                   className="bg-red-600 hover:bg-red-700 text-white"
@@ -235,6 +248,14 @@ const HorrorBingo = () => {
                 >
                   {t.resetCard}
                 </Button>
+                <Button 
+                  onClick={handleDownload}
+                  variant="outline"
+                  className="border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {t.downloadCard}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -245,6 +266,7 @@ const HorrorBingo = () => {
           <Card className="bg-gray-800/50 border-red-500/30 backdrop-blur-sm">
             <CardContent className="p-6">
               <div 
+                id="bingo-card"
                 className={`grid gap-2 mx-auto max-w-4xl`}
                 style={{ 
                   gridTemplateColumns: `repeat(${cardSize}, 1fr)`,
