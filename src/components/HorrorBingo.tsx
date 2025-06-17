@@ -4,10 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Skull, RefreshCw, Edit3, Save, X, Settings, Download } from 'lucide-react';
+import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, Target } from 'lucide-react';
 import { bingoThemes, BingoIdea } from '@/data/bingoData';
 import StardustLogo from '@/components/StardustLogo';
+import DifficultySlider from '@/components/DifficultySlider';
+import ClicheExcluder from '@/components/ClicheExcluder';
+import MovieSuggester from '@/components/MovieSuggester';
+import VSMode from '@/components/VSMode';
 import { downloadBingoCard } from '@/utils/downloadCard';
+import { suggestRandomMovie } from '@/utils/movieSuggester';
+import { useToast } from '@/hooks/use-toast';
 
 type Language = 'ro' | 'en';
 type CardSize = 3 | 4 | 5;
@@ -19,12 +25,26 @@ interface BingoCell {
   editedText: string;
 }
 
+interface VSGameState {
+  isActive: boolean;
+  player1: { name: string; score: number };
+  player2: { name: string; score: number };
+  currentRound: number;
+}
+
 const HorrorBingo = () => {
   const [language, setLanguage] = useState<Language>('ro');
   const [selectedTheme, setSelectedTheme] = useState('slasher');
   const [cardSize, setCardSize] = useState<CardSize>(5);
   const [bingoCard, setBingoCard] = useState<BingoCell[]>([]);
   const [showSettings, setShowSettings] = useState(true);
+  const [difficulty, setDifficulty] = useState(50);
+  const [showClicheExcluder, setShowClicheExcluder] = useState(false);
+  const [excludedIdeas, setExcludedIdeas] = useState<string[]>([]);
+  const [showMovieSuggester, setShowMovieSuggester] = useState(false);
+  const [showVSMode, setShowVSMode] = useState(false);
+  const [vsGameState, setVSGameState] = useState<VSGameState | null>(null);
+  const { toast } = useToast();
 
   const translations = {
     ro: {
@@ -41,7 +61,12 @@ const HorrorBingo = () => {
       editCell: "Editează",
       saveCell: "Salvează",
       cancelEdit: "Anulează",
-      madeFor: "făcut pentru iubita mea perfectă Elena"
+      madeFor: "made for my perfect girlfriend Elena",
+      excludeCliches: "Excludere Clișee",
+      movieSuggester: "Sugerează Film",
+      vsMode: "Modul VS",
+      winner: "Câștigător",
+      suggestedMovie: "Film sugerat"
     },
     en: {
       title: "Horror Bingo",
@@ -57,7 +82,12 @@ const HorrorBingo = () => {
       editCell: "Edit",
       saveCell: "Save",
       cancelEdit: "Cancel",
-      madeFor: "made for my perfect girlfriend Elena"
+      madeFor: "made for my perfect girlfriend Elena",
+      excludeCliches: "Exclude Clichés",
+      movieSuggester: "Movie Suggester",
+      vsMode: "VS Mode",
+      winner: "Winner",
+      suggestedMovie: "Suggested movie"
     }
   };
 
@@ -65,7 +95,20 @@ const HorrorBingo = () => {
 
   const generateBingoCard = () => {
     const theme = bingoThemes[selectedTheme];
-    const ideas = [...theme.ideas];
+    let ideas = [...theme.ideas];
+    
+    // Filter out excluded ideas
+    ideas = ideas.filter(idea => !excludedIdeas.includes(idea[language]));
+    
+    // Apply difficulty filter
+    if (difficulty < 30) {
+      // Common clichés - take first portion
+      ideas = ideas.slice(0, Math.ceil(ideas.length * 0.6));
+    } else if (difficulty > 70) {
+      // Rare clichés - take last portion
+      ideas = ideas.slice(Math.floor(ideas.length * 0.4));
+    }
+    
     const cardCells = cardSize * cardSize;
     const selectedIdeas: BingoIdea[] = [];
 
@@ -137,11 +180,77 @@ const HorrorBingo = () => {
     downloadBingoCard(cardSize, language);
   };
 
+  const toggleExcludedIdea = (ideaText: string) => {
+    setExcludedIdeas(prev => 
+      prev.includes(ideaText) 
+        ? prev.filter(idea => idea !== ideaText)
+        : [...prev, ideaText]
+    );
+  };
+
+  const handleMovieSuggestion = (platforms: string[]) => {
+    const movie = suggestRandomMovie(selectedTheme, platforms);
+    if (movie) {
+      toast({
+        title: t.suggestedMovie,
+        description: `${movie.title} (${movie.year}) - ${movie.platforms.join(', ')}`,
+      });
+      generateBingoCard();
+    } else {
+      toast({
+        title: "Nu s-a găsit film",
+        description: "Încearcă să selectezi mai multe platforme sau o altă temă.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const startVSGame = (player1Name: string, player2Name: string) => {
+    setVSGameState({
+      isActive: true,
+      player1: { name: player1Name, score: 0 },
+      player2: { name: player2Name, score: 0 },
+      currentRound: 1
+    });
+    generateBingoCard();
+  };
+
+  const handleBingo = (playerNumber: 1 | 2) => {
+    if (!vsGameState) return;
+    
+    const updatedState = {
+      ...vsGameState,
+      player1: {
+        ...vsGameState.player1,
+        score: playerNumber === 1 ? vsGameState.player1.score + 1 : vsGameState.player1.score
+      },
+      player2: {
+        ...vsGameState.player2,
+        score: playerNumber === 2 ? vsGameState.player2.score + 1 : vsGameState.player2.score
+      },
+      currentRound: vsGameState.currentRound + 1
+    };
+    
+    setVSGameState(updatedState);
+    
+    const winnerName = playerNumber === 1 ? updatedState.player1.name : updatedState.player2.name;
+    toast({
+      title: `${t.winner}: ${winnerName}!`,
+      description: `Runda ${vsGameState.currentRound} câștigată!`,
+    });
+    
+    // Generate new card for next round
+    setTimeout(() => {
+      generateBingoCard();
+      resetCard();
+    }, 2000);
+  };
+
   useEffect(() => {
     if (bingoCard.length > 0) {
       generateBingoCard();
     }
-  }, [language, selectedTheme, cardSize]);
+  }, [language, selectedTheme, cardSize, difficulty, excludedIdeas]);
 
   useEffect(() => {
     generateBingoCard();
@@ -163,14 +272,73 @@ const HorrorBingo = () => {
           <p className="text-xl text-gray-300 mb-4">{t.subtitle}</p>
           <p className="text-sm text-pink-300 italic mb-6">✨ {t.madeFor} ✨</p>
           
-          <Button
-            onClick={() => setShowSettings(!showSettings)}
-            variant="outline"
-            className="mb-6 border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            {showSettings ? t.hideSettings : t.settings}
-          </Button>
+          <div className="flex gap-2 justify-center flex-wrap mb-6">
+            <Button
+              onClick={() => setShowSettings(!showSettings)}
+              variant="outline"
+              className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              {showSettings ? t.hideSettings : t.settings}
+            </Button>
+            
+            <Button
+              onClick={() => setShowClicheExcluder(!showClicheExcluder)}
+              variant="outline"
+              className="border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white"
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              {t.excludeCliches}
+            </Button>
+            
+            <Button
+              onClick={() => setShowMovieSuggester(!showMovieSuggester)}
+              variant="outline"
+              className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+            >
+              <Film className="w-4 h-4 mr-2" />
+              {t.movieSuggester}
+            </Button>
+            
+            <Button
+              onClick={() => setShowVSMode(!showVSMode)}
+              variant="outline"
+              className="border-green-500 text-green-400 hover:bg-green-500 hover:text-white"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              {t.vsMode}
+            </Button>
+          </div>
+        </div>
+
+        {/* Feature Panels */}
+        <div className="grid gap-6 mb-8">
+          {showClicheExcluder && (
+            <ClicheExcluder
+              allIdeas={bingoThemes[selectedTheme].ideas}
+              excludedIdeas={excludedIdeas}
+              onToggleExclude={toggleExcludedIdea}
+              onClose={() => setShowClicheExcluder(false)}
+              language={language}
+            />
+          )}
+          
+          {showMovieSuggester && (
+            <MovieSuggester
+              selectedTheme={selectedTheme}
+              language={language}
+              onSuggestMovie={handleMovieSuggestion}
+            />
+          )}
+          
+          {showVSMode && (
+            <VSMode
+              language={language}
+              onStartVSGame={startVSGame}
+              gameState={vsGameState}
+              onBingo={handleBingo}
+            />
+          )}
         </div>
 
         {/* Settings Panel */}
@@ -183,7 +351,7 @@ const HorrorBingo = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-300">
                     {t.language}
@@ -231,6 +399,14 @@ const HorrorBingo = () => {
                       <SelectItem value="5">5x5</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div>
+                  <DifficultySlider
+                    difficulty={difficulty}
+                    onDifficultyChange={setDifficulty}
+                    language={language}
+                  />
                 </div>
               </div>
 
