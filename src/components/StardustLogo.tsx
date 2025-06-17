@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Skull } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -26,25 +26,25 @@ const StardustLogo = () => {
   return (
     <>
       <div 
-        className="flex items-center gap-2 cursor-pointer select-none"
+        className="fixed top-4 left-4 z-50 flex items-center gap-2 cursor-pointer select-none"
         onClick={handleLogoClick}
       >
         <div className="relative">
-          <Sparkles className="w-8 h-8 text-purple-400" />
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-pink-400 rounded-full animate-pulse" />
+          <Skull className="w-6 h-6 text-red-400" />
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
         </div>
-        <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+        <span className="text-lg font-bold bg-gradient-to-r from-red-400 via-red-500 to-red-600 bg-clip-text text-transparent">
           Stardust
         </span>
       </div>
 
       <AlertDialog open={showEasterEgg} onOpenChange={setShowEasterEgg}>
-        <AlertDialogContent className="bg-gradient-to-br from-pink-900/90 to-purple-900/90 border-pink-500/30 backdrop-blur-sm">
+        <AlertDialogContent className="bg-gradient-to-br from-red-900/90 to-gray-900/90 border-red-500/30 backdrop-blur-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-center text-pink-300 text-xl">
-              💕 Pentru Elena 💕
+            <AlertDialogTitle className="text-center text-red-300 text-xl">
+              💀 Pentru Elena 💀
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-center text-pink-200 text-base leading-relaxed">
+            <AlertDialogDescription className="text-center text-red-200 text-base leading-relaxed">
               I'm not perfect, I might not be the best boyfriend, but I will try my best to make you happy. 
               My biggest priority will always be your happiness. I love you a lot babe 💖
             </AlertDialogDescription>

@@ -149,18 +149,16 @@ const HorrorBingo = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black text-white p-4">
-      <div className="max-w-6xl mx-auto">
+      <StardustLogo />
+      <div className="max-w-6xl mx-auto pt-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-6 mb-4">
-            <StardustLogo />
-            <div className="flex items-center gap-3">
-              <Skull className="w-12 h-12 text-red-500" />
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent">
-                {t.title}
-              </h1>
-              <Skull className="w-12 h-12 text-red-500" />
-            </div>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Skull className="w-12 h-12 text-red-500" />
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent">
+              {t.title}
+            </h1>
+            <Skull className="w-12 h-12 text-red-500" />
           </div>
           <p className="text-xl text-gray-300 mb-4">{t.subtitle}</p>
           <p className="text-sm text-pink-300 italic mb-6">✨ {t.madeFor} ✨</p>
@@ -177,9 +175,12 @@ const HorrorBingo = () => {
 
         {/* Settings Panel */}
         {showSettings && (
-          <Card className="mb-8 bg-gray-800/50 border-red-500/30 backdrop-blur-sm">
+          <Card className="mb-8 bg-gray-900/70 border-red-600/40 backdrop-blur-sm shadow-lg shadow-red-900/20">
             <CardHeader>
-              <CardTitle className="text-red-400">{t.settings}</CardTitle>
+              <CardTitle className="text-red-400 flex items-center gap-2">
+                <Skull className="w-5 h-5" />
+                {t.settings}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -188,10 +189,10 @@ const HorrorBingo = () => {
                     {t.language}
                   </label>
                   <Select value={language} onValueChange={(value) => setLanguage(value as Language)}>
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectTrigger className="bg-gray-800/80 border-gray-600 text-white hover:border-red-500/50">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600">
+                    <SelectContent className="bg-gray-800 border-gray-600">
                       <SelectItem value="ro">Română</SelectItem>
                       <SelectItem value="en">English</SelectItem>
                     </SelectContent>
@@ -203,10 +204,10 @@ const HorrorBingo = () => {
                     {t.theme}
                   </label>
                   <Select value={selectedTheme} onValueChange={setSelectedTheme}>
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectTrigger className="bg-gray-800/80 border-gray-600 text-white hover:border-red-500/50">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600">
+                    <SelectContent className="bg-gray-800 border-gray-600">
                       {Object.entries(bingoThemes).map(([key, theme]) => (
                         <SelectItem key={key} value={key}>
                           {theme.name[language]}
@@ -221,10 +222,10 @@ const HorrorBingo = () => {
                     {t.cardSize}
                   </label>
                   <Select value={cardSize.toString()} onValueChange={(value) => setCardSize(parseInt(value) as CardSize)}>
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectTrigger className="bg-gray-800/80 border-gray-600 text-white hover:border-red-500/50">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600">
+                    <SelectContent className="bg-gray-800 border-gray-600">
                       <SelectItem value="3">3x3</SelectItem>
                       <SelectItem value="4">4x4</SelectItem>
                       <SelectItem value="5">5x5</SelectItem>
@@ -236,7 +237,7 @@ const HorrorBingo = () => {
               <div className="flex gap-4 mt-6 flex-wrap">
                 <Button 
                   onClick={generateBingoCard}
-                  className="bg-red-600 hover:bg-red-700 text-white"
+                  className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/30"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   {t.generateCard}
@@ -251,7 +252,7 @@ const HorrorBingo = () => {
                 <Button 
                   onClick={handleDownload}
                   variant="outline"
-                  className="border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white"
+                  className="border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   {t.downloadCard}
@@ -263,11 +264,11 @@ const HorrorBingo = () => {
 
         {/* Bingo Card */}
         {bingoCard.length > 0 && (
-          <Card className="bg-gray-800/50 border-red-500/30 backdrop-blur-sm">
+          <Card className="bg-gray-900/70 border-red-600/40 backdrop-blur-sm shadow-2xl shadow-red-900/30">
             <CardContent className="p-6">
               <div 
                 id="bingo-card"
-                className={`grid gap-2 mx-auto max-w-4xl`}
+                className={`grid gap-3 mx-auto max-w-4xl`}
                 style={{ 
                   gridTemplateColumns: `repeat(${cardSize}, 1fr)`,
                   aspectRatio: '1'
@@ -277,12 +278,13 @@ const HorrorBingo = () => {
                   <div
                     key={index}
                     className={`
-                      relative group border-2 rounded-lg p-2 cursor-pointer transition-all duration-300
+                      relative group border-2 rounded-lg p-3 cursor-pointer transition-all duration-300
                       ${cell.isChecked 
-                        ? 'bg-red-600 border-red-400 shadow-lg shadow-red-500/20' 
-                        : 'bg-gray-700/50 border-gray-600 hover:border-red-500/50 hover:bg-gray-700'
+                        ? 'bg-gradient-to-br from-red-600 to-red-700 border-red-400 shadow-lg shadow-red-500/30 transform scale-105' 
+                        : 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-600/50 hover:border-red-500/60 hover:bg-gradient-to-br hover:from-gray-700/80 hover:to-gray-800/80 hover:shadow-lg hover:shadow-red-900/20'
                       }
                       min-h-[80px] flex flex-col items-center justify-center text-center
+                      backdrop-blur-sm
                     `}
                     onClick={() => !cell.isEditing && toggleCell(index)}
                   >
@@ -291,7 +293,7 @@ const HorrorBingo = () => {
                         <Input
                           value={cell.editedText}
                           onChange={(e) => updateEditText(index, e.target.value)}
-                          className="text-xs bg-gray-800 border-gray-600 text-white"
+                          className="text-xs bg-gray-900/80 border-gray-600 text-white"
                           autoFocus
                         />
                         <div className="flex gap-1 justify-center">
@@ -314,7 +316,7 @@ const HorrorBingo = () => {
                       </div>
                     ) : (
                       <>
-                        <span className="text-xs font-medium leading-tight">
+                        <span className={`text-xs font-medium leading-tight ${cell.isChecked ? 'text-white' : 'text-gray-200'}`}>
                           {cell.idea[language]}
                         </span>
                         <Button
@@ -330,7 +332,7 @@ const HorrorBingo = () => {
                         </Button>
                         {cell.isChecked && (
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center animate-pulse">
                               <span className="text-2xl">💀</span>
                             </div>
                           </div>
