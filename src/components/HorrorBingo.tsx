@@ -4,20 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, Target, QrCode, Heart, HeartOff, Volume2, Palette } from 'lucide-react';
+import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, Target } from 'lucide-react';
 import { bingoThemes, BingoIdea } from '@/data/bingoData';
 import StardustLogo from '@/components/StardustLogo';
 import DifficultySlider from '@/components/DifficultySlider';
 import ClicheExcluder from '@/components/ClicheExcluder';
 import MovieSuggester from '@/components/MovieSuggester';
 import VSMode from '@/components/VSMode';
-import QRCodeShare from '@/components/QRCodeShare';
-import CustomThemes from '@/components/CustomThemes';
-import SoundEffects from '@/components/SoundEffects';
-import FavoriteCards from '@/components/FavoriteCards';
 import { downloadBingoCard } from '@/utils/downloadCard';
 import { suggestRandomMovie } from '@/utils/movieSuggester';
-import { soundEffects } from '@/utils/soundEffects';
 import { useToast } from '@/hooks/use-toast';
 
 type Language = 'ro' | 'en';
@@ -37,19 +32,6 @@ interface VSGameState {
   currentRound: number;
 }
 
-interface CustomTheme {
-  id: string;
-  name: { ro: string; en: string };
-  ideas: BingoIdea[];
-}
-
-interface FavoriteCard {
-  id: string;
-  ideas: BingoIdea[];
-  timestamp: number;
-  language: 'ro' | 'en';
-}
-
 const HorrorBingo = () => {
   const [language, setLanguage] = useState<Language>('ro');
   const [selectedTheme, setSelectedTheme] = useState('slasher');
@@ -61,14 +43,7 @@ const HorrorBingo = () => {
   const [excludedIdeas, setExcludedIdeas] = useState<string[]>([]);
   const [showMovieSuggester, setShowMovieSuggester] = useState(false);
   const [showVSMode, setShowVSMode] = useState(false);
-  const [showQRCode, setShowQRCode] = useState(false);
-  const [showCustomThemes, setShowCustomThemes] = useState(false);
-  const [showSoundEffects, setShowSoundEffects] = useState(false);
-  const [showFavoriteCards, setShowFavoriteCards] = useState(false);
   const [vsGameState, setVSGameState] = useState<VSGameState | null>(null);
-  const [customThemes, setCustomThemes] = useState<CustomTheme[]>([]);
-  const [favoriteCards, setFavoriteCards] = useState<FavoriteCard[]>([]);
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const { toast } = useToast();
 
   const translations = {
@@ -90,16 +65,8 @@ const HorrorBingo = () => {
       excludeCliches: "Excludere Clișee",
       movieSuggester: "Sugerează Film",
       vsMode: "Modul VS",
-      qrCode: "Cod QR",
-      customThemes: "Teme Personalizate",
-      soundEffects: "Efecte Sonore",
-      favoriteCards: "Carduri Favorite",
-      addToFavorites: "Adaugă la Favorite",
-      removeFromFavorites: "Șterge din Favorite",
       winner: "Câștigător",
-      suggestedMovie: "Film sugerat",
-      cardSaved: "Card salvat la favorite!",
-      cardRemoved: "Card șters din favorite!"
+      suggestedMovie: "Film sugerat"
     },
     en: {
       title: "Horror Bingo",
@@ -119,57 +86,15 @@ const HorrorBingo = () => {
       excludeCliches: "Exclude Clichés",
       movieSuggester: "Movie Suggester",
       vsMode: "VS Mode",
-      qrCode: "QR Code",
-      customThemes: "Custom Themes",
-      soundEffects: "Sound Effects",
-      favoriteCards: "Favorite Cards",
-      addToFavorites: "Add to Favorites",
-      removeFromFavorites: "Remove from Favorites",
       winner: "Winner",
-      suggestedMovie: "Suggested movie",
-      cardSaved: "Card saved to favorites!",
-      cardRemoved: "Card removed from favorites!"
+      suggestedMovie: "Suggested movie"
     }
   };
 
   const t = translations[language];
 
-  // Load saved data on component mount
-  useEffect(() => {
-    const savedCustomThemes = localStorage.getItem('horror-bingo-custom-themes');
-    if (savedCustomThemes) {
-      setCustomThemes(JSON.parse(savedCustomThemes));
-    }
-
-    const savedFavorites = localStorage.getItem('horror-bingo-favorites');
-    if (savedFavorites) {
-      setFavoriteCards(JSON.parse(savedFavorites));
-    }
-
-    setSoundEnabled(soundEffects.isEnabled());
-  }, []);
-
-  // Save custom themes to localStorage
-  useEffect(() => {
-    localStorage.setItem('horror-bingo-custom-themes', JSON.stringify(customThemes));
-  }, [customThemes]);
-
-  // Save favorites to localStorage
-  useEffect(() => {
-    localStorage.setItem('horror-bingo-favorites', JSON.stringify(favoriteCards));
-  }, [favoriteCards]);
-
-  const getAllThemes = () => {
-    const allThemes = { ...bingoThemes };
-    customThemes.forEach(theme => {
-      allThemes[theme.id] = theme;
-    });
-    return allThemes;
-  };
-
   const generateBingoCard = () => {
-    const allThemes = getAllThemes();
-    const theme = allThemes[selectedTheme];
+    const theme = bingoThemes[selectedTheme];
     let ideas = [...theme.ideas];
     
     // Filter out excluded ideas
@@ -177,32 +102,24 @@ const HorrorBingo = () => {
     
     // Apply difficulty filter
     if (difficulty < 30) {
+      // Common clichés - take first portion
       ideas = ideas.slice(0, Math.ceil(ideas.length * 0.6));
     } else if (difficulty > 70) {
+      // Rare clichés - take last portion
       ideas = ideas.slice(Math.floor(ideas.length * 0.4));
     }
-    
-    // Add favorite cards with higher probability
-    const favoriteIdeas: BingoIdea[] = [];
-    favoriteCards.forEach(card => {
-      card.ideas.forEach(idea => {
-        if (Math.random() < 0.3) { // 30% chance for favorite ideas
-          favoriteIdeas.push(idea);
-        }
-      });
-    });
-    
-    ideas = [...ideas, ...favoriteIdeas];
     
     const cardCells = cardSize * cardSize;
     const selectedIdeas: BingoIdea[] = [];
 
+    // Shuffle and select ideas
     for (let i = 0; i < cardCells && ideas.length > 0; i++) {
       const randomIndex = Math.floor(Math.random() * ideas.length);
       selectedIdeas.push(ideas[randomIndex]);
       ideas.splice(randomIndex, 1);
     }
 
+    // Fill remaining cells if needed
     while (selectedIdeas.length < cardCells) {
       selectedIdeas.push({
         ro: "Spațiu liber",
@@ -219,7 +136,6 @@ const HorrorBingo = () => {
   };
 
   const toggleCell = (index: number) => {
-    soundEffects.playClick();
     setBingoCard(prev => prev.map((cell, i) => 
       i === index ? { ...cell, isChecked: !cell.isChecked } : cell
     ));
@@ -302,8 +218,6 @@ const HorrorBingo = () => {
   const handleBingo = (playerNumber: 1 | 2) => {
     if (!vsGameState) return;
     
-    soundEffects.playBingo();
-    
     const updatedState = {
       ...vsGameState,
       player1: {
@@ -325,82 +239,11 @@ const HorrorBingo = () => {
       description: `Runda ${vsGameState.currentRound} câștigată!`,
     });
     
+    // Generate new card for next round
     setTimeout(() => {
       generateBingoCard();
       resetCard();
     }, 2000);
-  };
-
-  const handleThemeCreated = (theme: CustomTheme) => {
-    setCustomThemes(prev => [...prev, theme]);
-    setSelectedTheme(theme.id);
-    toast({
-      title: "Temă creată!",
-      description: `Tema "${theme.name[language]}" a fost adăugată.`,
-    });
-  };
-
-  const handleDeleteTheme = (themeId: string) => {
-    setCustomThemes(prev => prev.filter(theme => theme.id !== themeId));
-    if (selectedTheme === themeId) {
-      setSelectedTheme('slasher');
-    }
-  };
-
-  const getCurrentCardId = () => {
-    return bingoCard.map(cell => cell.idea[language]).join('|');
-  };
-
-  const isCurrentCardFavorite = () => {
-    const currentCardId = getCurrentCardId();
-    return favoriteCards.some(card => 
-      card.ideas.map(idea => idea[language]).join('|') === currentCardId
-    );
-  };
-
-  const toggleFavoriteCard = () => {
-    const currentCardId = getCurrentCardId();
-    const currentIdeas = bingoCard.map(cell => cell.idea);
-    
-    if (isCurrentCardFavorite()) {
-      setFavoriteCards(prev => prev.filter(card => 
-        card.ideas.map(idea => idea[language]).join('|') !== currentCardId
-      ));
-      toast({
-        title: t.cardRemoved,
-      });
-    } else {
-      const newFavorite: FavoriteCard = {
-        id: `favorite_${Date.now()}`,
-        ideas: currentIdeas,
-        timestamp: Date.now(),
-        language
-      };
-      setFavoriteCards(prev => [...prev, newFavorite]);
-      soundEffects.playFavorite();
-      toast({
-        title: t.cardSaved,
-      });
-    }
-  };
-
-  const loadFavoriteCard = (card: FavoriteCard) => {
-    setBingoCard(card.ideas.map(idea => ({
-      idea,
-      isChecked: false,
-      isEditing: false,
-      editedText: idea[language]
-    })));
-    setShowFavoriteCards(false);
-  };
-
-  const removeFavoriteCard = (cardId: string) => {
-    setFavoriteCards(prev => prev.filter(card => card.id !== cardId));
-  };
-
-  const handleSoundToggle = (enabled: boolean) => {
-    setSoundEnabled(enabled);
-    soundEffects.setEnabled(enabled);
   };
 
   useEffect(() => {
@@ -465,42 +308,6 @@ const HorrorBingo = () => {
               <Users className="w-4 h-4 mr-2" />
               {t.vsMode}
             </Button>
-
-            <Button
-              onClick={() => setShowQRCode(!showQRCode)}
-              variant="outline"
-              className="border-yellow-500 text-yellow-400 hover:bg-yellow-500 hover:text-white"
-            >
-              <QrCode className="w-4 h-4 mr-2" />
-              {t.qrCode}
-            </Button>
-
-            <Button
-              onClick={() => setShowCustomThemes(!showCustomThemes)}
-              variant="outline"
-              className="border-indigo-500 text-indigo-400 hover:bg-indigo-500 hover:text-white"
-            >
-              <Palette className="w-4 h-4 mr-2" />
-              {t.customThemes}
-            </Button>
-
-            <Button
-              onClick={() => setShowSoundEffects(!showSoundEffects)}
-              variant="outline"
-              className="border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white"
-            >
-              <Volume2 className="w-4 h-4 mr-2" />
-              {t.soundEffects}
-            </Button>
-
-            <Button
-              onClick={() => setShowFavoriteCards(!showFavoriteCards)}
-              variant="outline"
-              className="border-pink-500 text-pink-400 hover:bg-pink-500 hover:text-white"
-            >
-              <Heart className="w-4 h-4 mr-2" />
-              {t.favoriteCards}
-            </Button>
           </div>
         </div>
 
@@ -508,7 +315,7 @@ const HorrorBingo = () => {
         <div className="grid gap-6 mb-8">
           {showClicheExcluder && (
             <ClicheExcluder
-              allIdeas={getAllThemes()[selectedTheme].ideas}
+              allIdeas={bingoThemes[selectedTheme].ideas}
               excludedIdeas={excludedIdeas}
               onToggleExclude={toggleExcludedIdea}
               onClose={() => setShowClicheExcluder(false)}
@@ -530,43 +337,6 @@ const HorrorBingo = () => {
               onStartVSGame={startVSGame}
               gameState={vsGameState}
               onBingo={handleBingo}
-            />
-          )}
-
-          {showQRCode && (
-            <QRCodeShare
-              cardData={bingoCard}
-              language={language}
-              onClose={() => setShowQRCode(false)}
-            />
-          )}
-
-          {showCustomThemes && (
-            <CustomThemes
-              language={language}
-              onClose={() => setShowCustomThemes(false)}
-              onThemeCreated={handleThemeCreated}
-              customThemes={customThemes}
-              onDeleteTheme={handleDeleteTheme}
-            />
-          )}
-
-          {showSoundEffects && (
-            <SoundEffects
-              language={language}
-              onClose={() => setShowSoundEffects(false)}
-              soundEnabled={soundEnabled}
-              onToggleSound={handleSoundToggle}
-            />
-          )}
-
-          {showFavoriteCards && (
-            <FavoriteCards
-              language={language}
-              onClose={() => setShowFavoriteCards(false)}
-              favoriteCards={favoriteCards}
-              onRemoveFavorite={removeFavoriteCard}
-              onLoadCard={loadFavoriteCard}
             />
           )}
         </div>
@@ -606,7 +376,7 @@ const HorrorBingo = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-600">
-                      {Object.entries(getAllThemes()).map(([key, theme]) => (
+                      {Object.entries(bingoThemes).map(([key, theme]) => (
                         <SelectItem key={key} value={key}>
                           {theme.name[language]}
                         </SelectItem>
@@ -662,22 +432,6 @@ const HorrorBingo = () => {
                 >
                   <Download className="w-4 h-4 mr-2" />
                   {t.downloadCard}
-                </Button>
-                <Button
-                  onClick={toggleFavoriteCard}
-                  variant="outline"
-                  className={`${isCurrentCardFavorite() 
-                    ? 'border-pink-500 text-pink-400 hover:bg-pink-500' 
-                    : 'border-gray-500 text-gray-400 hover:bg-gray-500'
-                  } hover:text-white`}
-                  disabled={bingoCard.length === 0}
-                >
-                  {isCurrentCardFavorite() ? (
-                    <HeartOff className="w-4 h-4 mr-2" />
-                  ) : (
-                    <Heart className="w-4 h-4 mr-2" />
-                  )}
-                  {isCurrentCardFavorite() ? t.removeFromFavorites : t.addToFavorites}
                 </Button>
               </div>
             </CardContent>
