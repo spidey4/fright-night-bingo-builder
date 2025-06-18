@@ -4,13 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, Target } from 'lucide-react';
+import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, QrCode } from 'lucide-react';
 import { bingoThemes, BingoIdea } from '@/data/bingoData';
 import StardustLogo from '@/components/StardustLogo';
 import DifficultySlider from '@/components/DifficultySlider';
 import ClicheExcluder from '@/components/ClicheExcluder';
 import MovieSuggester from '@/components/MovieSuggester';
 import VSMode from '@/components/VSMode';
+import QRCodeShare from '@/components/QRCodeShare';
 import { downloadBingoCard } from '@/utils/downloadCard';
 import { suggestRandomMovie } from '@/utils/movieSuggester';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +45,7 @@ const HorrorBingo = () => {
   const [showMovieSuggester, setShowMovieSuggester] = useState(false);
   const [showVSMode, setShowVSMode] = useState(false);
   const [vsGameState, setVSGameState] = useState<VSGameState | null>(null);
+  const [showQRCode, setShowQRCode] = useState(false);
   const { toast } = useToast();
 
   const translations = {
@@ -66,7 +68,8 @@ const HorrorBingo = () => {
       movieSuggester: "Sugerează Film",
       vsMode: "Modul VS",
       winner: "Câștigător",
-      suggestedMovie: "Film sugerat"
+      suggestedMovie: "Film sugerat",
+      qrCode: "Cod QR",
     },
     en: {
       title: "Horror Bingo",
@@ -87,7 +90,8 @@ const HorrorBingo = () => {
       movieSuggester: "Movie Suggester",
       vsMode: "VS Mode",
       winner: "Winner",
-      suggestedMovie: "Suggested movie"
+      suggestedMovie: "Suggested movie",
+      qrCode: "QR Code",
     }
   };
 
@@ -308,6 +312,17 @@ const HorrorBingo = () => {
               <Users className="w-4 h-4 mr-2" />
               {t.vsMode}
             </Button>
+
+            {bingoCard.length > 0 && (
+              <Button
+                onClick={() => setShowQRCode(!showQRCode)}
+                variant="outline"
+                className="border-orange-500 text-orange-400 hover:bg-orange-500 hover:text-white"
+              >
+                <QrCode className="w-4 h-4 mr-2" />
+                {t.qrCode}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -337,6 +352,16 @@ const HorrorBingo = () => {
               onStartVSGame={startVSGame}
               gameState={vsGameState}
               onBingo={handleBingo}
+            />
+          )}
+
+          {showQRCode && bingoCard.length > 0 && (
+            <QRCodeShare
+              bingoCard={bingoCard}
+              language={language}
+              selectedTheme={selectedTheme}
+              cardSize={cardSize}
+              onClose={() => setShowQRCode(false)}
             />
           )}
         </div>
