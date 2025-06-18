@@ -57,7 +57,8 @@ const QRCodeShare: React.FC<QRCodeShareProps> = ({
       cards: bingoCard.map(cell => cell.idea[language])
     };
 
-    const dataString = btoa(JSON.stringify(cardData));
+    // Use encodeURIComponent instead of btoa to handle UTF-8 characters
+    const dataString = encodeURIComponent(JSON.stringify(cardData));
     const url = `${window.location.origin}?card=${dataString}`;
     setShareUrl(url);
 
