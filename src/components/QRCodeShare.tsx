@@ -51,26 +51,28 @@ const QRCodeShare: React.FC<QRCodeShareProps> = ({
 
   const generateQRCode = async () => {
     const cardData = {
-      theme: selectedTheme,
-      size: cardSize,
-      language: language,
-      cards: bingoCard.map(cell => cell.idea[language])
+      t: selectedTheme, // shortened property names
+      s: cardSize,
+      l: language,
+      c: bingoCard.map(cell => cell.idea[language])
     };
 
-    // Use encodeURIComponent instead of btoa to handle UTF-8 characters
+    // Use a shorter parameter name and compress the JSON
     const dataString = encodeURIComponent(JSON.stringify(cardData));
-    const url = `${window.location.origin}?card=${dataString}`;
+    const url = `${window.location.origin}?d=${dataString}`;
     setShareUrl(url);
+
+    console.log('Generated URL length:', url.length);
 
     try {
       const qrCode = await QRCodeLib.toDataURL(url, {
-        width: 256,
-        margin: 4,
+        width: 300,
+        margin: 2,
         color: {
           dark: '#000000',
           light: '#ffffff'
         },
-        errorCorrectionLevel: 'M'
+        errorCorrectionLevel: 'L' // Lower error correction for smaller QR code
       });
       setQrCodeUrl(qrCode);
     } catch (error) {
@@ -107,8 +109,8 @@ const QRCodeShare: React.FC<QRCodeShareProps> = ({
       <CardContent className="space-y-4">
         <div className="flex flex-col items-center space-y-4">
           {qrCodeUrl && (
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-              <img src={qrCodeUrl} alt="QR Code" className="w-64 h-64" />
+            <div className="bg-white p-8 rounded-lg shadow-lg">
+              <img src={qrCodeUrl} alt="QR Code" className="w-72 h-72" />
             </div>
           )}
           <p className="text-sm text-gray-400 text-center">{t.scanInfo}</p>

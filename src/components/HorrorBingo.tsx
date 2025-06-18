@@ -112,24 +112,30 @@ const HorrorBingo = () => {
   // Load shared card from URL on component mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const cardData = urlParams.get('card');
+    const cardData = urlParams.get('d') || urlParams.get('card'); // Support both old and new format
     
     if (cardData) {
       try {
         const decodedData = decodeURIComponent(cardData);
-        const parsedData: SharedCardData = JSON.parse(decodedData);
+        const parsedData = JSON.parse(decodedData);
+        
+        // Handle both old and new format
+        const theme = parsedData.t || parsedData.theme;
+        const size = parsedData.s || parsedData.size;
+        const lang = parsedData.l || parsedData.language;
+        const cards = parsedData.c || parsedData.cards;
         
         // Set the shared card data
-        setLanguage(parsedData.language);
-        setSelectedTheme(parsedData.theme);
-        setCardSize(parsedData.size);
+        setLanguage(lang);
+        setSelectedTheme(theme);
+        setCardSize(size);
         setIsSharedCard(true);
         
         // Create bingo cells from shared card data
-        const sharedCells: BingoCell[] = parsedData.cards.map(cardText => ({
+        const sharedCells: BingoCell[] = cards.map((cardText: string) => ({
           idea: {
-            ro: parsedData.language === 'ro' ? cardText : cardText,
-            en: parsedData.language === 'en' ? cardText : cardText
+            ro: lang === 'ro' ? cardText : cardText,
+            en: lang === 'en' ? cardText : cardText
           },
           isChecked: false,
           isEditing: false,
@@ -141,7 +147,7 @@ const HorrorBingo = () => {
         
         toast({
           title: t.sharedCard,
-          description: `Card ${parsedData.size}x${parsedData.size} încărcat cu succes!`,
+          description: `Card ${size}x${size} încărcat cu succes!`,
         });
       } catch (error) {
         console.error('Error loading shared card:', error);
