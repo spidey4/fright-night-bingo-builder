@@ -33,6 +33,13 @@ interface VSGameState {
   currentRound: number;
 }
 
+interface SharedCardData {
+  theme: string;
+  size: CardSize;
+  language: Language;
+  cards: string[];
+}
+
 const HorrorBingo = () => {
   const [language, setLanguage] = useState<Language>('ro');
   const [selectedTheme, setSelectedTheme] = useState('slasher');
@@ -46,6 +53,7 @@ const HorrorBingo = () => {
   const [showVSMode, setShowVSMode] = useState(false);
   const [vsGameState, setVSGameState] = useState<VSGameState | null>(null);
   const [showQRCode, setShowQRCode] = useState(false);
+  const [isSharedCard, setIsSharedCard] = useState(false);
   const { toast } = useToast();
 
   const translations = {
@@ -70,6 +78,8 @@ const HorrorBingo = () => {
       winner: "Câștigător",
       suggestedMovie: "Film sugerat",
       qrCode: "Cod QR",
+      sharedCard: "Card Partajat",
+      createNew: "Creează Card Nou",
     },
     en: {
       title: "Horror Bingo",
@@ -92,10 +102,60 @@ const HorrorBingo = () => {
       winner: "Winner",
       suggestedMovie: "Suggested movie",
       qrCode: "QR Code",
+      sharedCard: "Shared Card",
+      createNew: "Create New Card",
     }
   };
 
   const t = translations[language];
+
+  // Load shared card from URL on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const cardData = urlParams.get('card');
+    
+    if (cardData) {
+      try {
+        const decodedData = decodeURIComponent(cardData);
+        const parsedData: SharedCardData = JSON.parse(decodedData);
+        
+        // Set the shared card data
+        setLanguage(parsedData.language);
+        setSelectedTheme(parsedData.theme);
+        setCardSize(parsedData.size);
+        setIsSharedCard(true);
+        
+        // Create bingo cells from shared card data
+        const sharedCells: BingoCell[] = parsedData.cards.map(cardText => ({
+          idea: {
+            ro: parsedData.language === 'ro' ? cardText : cardText,
+            en: parsedData.language === 'en' ? cardText : cardText
+          },
+          isChecked: false,
+          isEditing: false,
+          editedText: cardText
+        }));
+        
+        setBingoCard(sharedCells);
+        setShowSettings(false);
+        
+        toast({
+          title: t.sharedCard,
+          description: `Card ${parsedData.size}x${parsedData.size} încărcat cu succes!`,
+        });
+      } catch (error) {
+        console.error('Error loading shared card:', error);
+        toast({
+          title: "Eroare",
+          description: "Nu s-a putut încărca cardul partajat.",
+          variant: "destructive"
+        });
+        generateBingoCard();
+      }
+    } else {
+      generateBingoCard();
+    }
+  }, []);
 
   const generateBingoCard = () => {
     const theme = bingoThemes[selectedTheme];
@@ -137,6 +197,13 @@ const HorrorBingo = () => {
       isEditing: false,
       editedText: idea[language]
     })));
+    
+    setIsSharedCard(false);
+    
+    // Clear URL parameters when generating new card
+    if (window.location.search) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   };
 
   const toggleCell = (index: number) => {
@@ -251,14 +318,10 @@ const HorrorBingo = () => {
   };
 
   useEffect(() => {
-    if (bingoCard.length > 0) {
+    if (bingoCard.length > 0 && !isSharedCard) {
       generateBingoCard();
     }
   }, [language, selectedTheme, cardSize, difficulty, excludedIdeas]);
-
-  useEffect(() => {
-    generateBingoCard();
-  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black text-white p-4">
@@ -275,6 +338,23 @@ const HorrorBingo = () => {
           </div>
           <p className="text-xl text-gray-300 mb-4">{t.subtitle}</p>
           <p className="text-sm text-pink-300 italic mb-6">✨ {t.madeFor} ✨</p>
+          
+          {isSharedCard && (
+            <div className="mb-4">
+              <Badge variant="outline" className="border-green-500/30 text-green-400 mb-2">
+                {t.sharedCard}
+              </Badge>
+              <div>
+                <Button
+                  onClick={generateBingoCard}
+                  variant="outline"
+                  className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+                >
+                  {t.createNew}
+                </Button>
+              </div>
+            </div>
+          )}
           
           <div className="flex gap-2 justify-center flex-wrap mb-6">
             <Button
