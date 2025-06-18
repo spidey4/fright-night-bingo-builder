@@ -64,12 +64,13 @@ const QRCodeShare: React.FC<QRCodeShareProps> = ({
 
     try {
       const qrCode = await QRCodeLib.toDataURL(url, {
-        width: 200,
-        margin: 2,
+        width: 256,
+        margin: 4,
         color: {
-          dark: '#dc2626',
+          dark: '#000000',
           light: '#ffffff'
-        }
+        },
+        errorCorrectionLevel: 'M'
       });
       setQrCodeUrl(qrCode);
     } catch (error) {
@@ -106,8 +107,8 @@ const QRCodeShare: React.FC<QRCodeShareProps> = ({
       <CardContent className="space-y-4">
         <div className="flex flex-col items-center space-y-4">
           {qrCodeUrl && (
-            <div className="bg-white p-4 rounded-lg">
-              <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48" />
+            <div className="bg-white p-6 rounded-lg shadow-lg">
+              <img src={qrCodeUrl} alt="QR Code" className="w-64 h-64" />
             </div>
           )}
           <p className="text-sm text-gray-400 text-center">{t.scanInfo}</p>
