@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Film, Shuffle, Settings, X, Star } from 'lucide-react';
-import { searchMoviesByThemes, MovieSuggestion } from '@/utils/tmdbApi';
+import { Film, X, Key, AlertCircle } from 'lucide-react';
+import { searchMoviesByThemes } from '@/utils/tmdbApi';
 import { useToast } from '@/hooks/use-toast';
 
 interface MovieSuggesterProps {
@@ -14,53 +15,50 @@ interface MovieSuggesterProps {
   onSuggestMovie: (platforms: string[]) => void;
 }
 
-const MovieSuggester: React.FC<MovieSuggesterProps> = ({
-  selectedThemes,
-  language,
-  onSuggestMovie
-}) => {
+const MovieSuggester = ({ selectedThemes, language, onSuggestMovie }: MovieSuggesterProps) => {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
-  const [tmdbApiKey, setTmdbApiKey] = useState('');
-  const [showApiSettings, setShowApiSettings] = useState(false);
-  const [suggestedMovies, setSuggestedMovies] = useState<MovieSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const { toast } = useToast();
 
   const platforms = [
     'Netflix', 'Amazon Prime', 'HBO Max', 'Hulu', 'Disney+', 
-    'Apple TV+', 'Paramount+', 'Shudder', 'Tubi', 'YouTube'
+    'Apple TV+', 'Paramount+', 'Shudder'
   ];
 
   const translations = {
     ro: {
-      title: "Sugerează Filme",
-      platforms: "Platforme de Streaming",
-      suggest: "Sugerează Filme",
-      selectPlatforms: "Selectează platformele tale",
-      apiSettings: "Setări API",
-      tmdbKey: "TMDB API Key (opțional)",
-      tmdbKeyHelp: "Pentru mai multe filme, obține o cheie gratuită de la themoviedb.org",
-      getApiKey: "Obține cheie API",
-      noMovies: "Nu s-au găsit filme",
-      tryDifferent: "Încearcă platforme diferite sau alte teme",
-      suggestedMovies: "Filme Sugerate",
-      rating: "Rating",
-      year: "An"
+      title: "Sugerează Film Horror",
+      subtitle: "Selectează platformele pe care ai acces",
+      platforms: "Platforme disponibile",
+      suggestMovie: "Sugerează Film",
+      close: "Închide",
+      noMovieFound: "Nu s-a găsit film",
+      tryDifferent: "Încearcă să selectezi mai multe platforme sau alte teme.",
+      apiKeyTitle: "API Key TMDB (Opțional)",
+      apiKeyDescription: "Pentru sute de sugestii de filme, introdu API key-ul tău TMDB gratuit:",
+      getApiKey: "Obține API Key Gratuit",
+      enterApiKey: "Introdu API Key",
+      hideApiKey: "Ascunde",
+      withoutApiKey: "Fără API key vei primi doar câteva filme din baza noastră locală.",
+      foundMovies: "filme găsite"
     },
     en: {
-      title: "Movie Suggester",
-      platforms: "Streaming Platforms",
-      suggest: "Suggest Movies",
-      selectPlatforms: "Select your platforms",
-      apiSettings: "API Settings",
-      tmdbKey: "TMDB API Key (optional)",
-      tmdbKeyHelp: "For more movies, get a free key from themoviedb.org",
-      getApiKey: "Get API Key",
-      noMovies: "No movies found",
-      tryDifferent: "Try different platforms or themes",
-      suggestedMovies: "Suggested Movies",
-      rating: "Rating",
-      year: "Year"
+      title: "Horror Movie Suggester",
+      subtitle: "Select your available streaming platforms",
+      platforms: "Available platforms",
+      suggestMovie: "Suggest Movie",
+      close: "Close",
+      noMovieFound: "No movie found",
+      tryDifferent: "Try selecting more platforms or different themes.",
+      apiKeyTitle: "TMDB API Key (Optional)",
+      apiKeyDescription: "For hundreds of movie suggestions, enter your free TMDB API key:",
+      getApiKey: "Get Free API Key",
+      enterApiKey: "Enter API Key",
+      hideApiKey: "Hide",
+      withoutApiKey: "Without API key you'll get only a few movies from our local database.",
+      foundMovies: "movies found"
     }
   };
 
@@ -74,167 +72,165 @@ const MovieSuggester: React.FC<MovieSuggesterProps> = ({
     );
   };
 
-  const handleSuggestMovies = async () => {
+  const handleSuggestMovie = async () => {
     if (selectedPlatforms.length === 0) {
       toast({
         title: "Selectează platforme",
-        description: "Te rog selectează cel puțin o platformă de streaming.",
+        description: "Te rog selectează cel puțin o platformă.",
         variant: "destructive"
       });
       return;
     }
 
     setIsLoading(true);
+    
     try {
-      const movies = await searchMoviesByThemes(selectedThemes, tmdbApiKey || undefined);
+      const movies = await searchMoviesByThemes(selectedThemes, apiKey);
       
-      // Filter by available platforms (simulated)
-      const filteredMovies = movies.filter(movie => 
-        movie.platforms.some(platform => selectedPlatforms.includes(platform))
-      ).slice(0, 8);
-
-      setSuggestedMovies(filteredMovies);
-      
-      if (filteredMovies.length === 0) {
+      if (movies.length > 0) {
+        // Filter by available platforms
+        const availableMovies = movies.filter(movie => 
+          movie.platforms.some(platform => selectedPlatforms.includes(platform))
+        );
+        
+        if (availableMovies.length > 0) {
+          const randomMovie = availableMovies[Math.floor(Math.random() * availableMovies.length)];
+          toast({
+            title: `🎬 ${randomMovie.title} (${randomMovie.year})`,
+            description: `⭐ ${randomMovie.rating}/10 - ${randomMovie.platforms.join(', ')}\n\n${randomMovie.overview}`,
+            duration: 8000,
+          });
+        } else {
+          toast({
+            title: t.noMovieFoun,
+            description: t.tryDifferent,
+            variant: "destructive"
+          });
+        }
+        
+        // Show count of total movies found
         toast({
-          title: t.noMovies,
-          description: t.tryDifferent,
-          variant: "destructive"
+          title: `${movies.length} ${t.foundMovies}`,
+          description: apiKey ? "Cu TMDB API" : "Din baza locală",
         });
       } else {
-        // Generate a new bingo card when movies are suggested
         onSuggestMovie(selectedPlatforms);
       }
     } catch (error) {
-      console.error('Error suggesting movies:', error);
-      toast({
-        title: "Eroare",
-        description: "Nu s-au putut obține sugestii de filme.",
-        variant: "destructive"
-      });
+      console.error('Error suggesting movie:', error);
+      onSuggestMovie(selectedPlatforms);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Card className="bg-gray-900/70 border-red-600/40 backdrop-blur-sm">
+    <Card className="bg-gray-900/70 border-blue-600/40 backdrop-blur-sm shadow-lg shadow-blue-900/20">
       <CardHeader>
-        <CardTitle className="text-red-400 flex items-center gap-2 justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-blue-400 flex items-center gap-2">
             <Film className="w-5 h-5" />
             {t.title}
-          </div>
+          </CardTitle>
           <Button
+            onClick={() => onSuggestMovie([])}
             variant="ghost"
             size="sm"
-            onClick={() => setShowApiSettings(!showApiSettings)}
             className="text-gray-400 hover:text-white"
           >
-            <Settings className="w-4 h-4" />
+            <X className="w-4 h-4" />
           </Button>
-        </CardTitle>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {showApiSettings && (
-          <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-            <label className="block text-sm font-medium mb-2 text-gray-300">
-              {t.tmdbKey}
-            </label>
-            <Input
-              type="password"
-              value={tmdbApiKey}
-              onChange={(e) => setTmdbApiKey(e.target.value)}
-              placeholder="Introdu cheia TMDB API..."
-              className="bg-gray-800 border-gray-600 text-white mb-2"
-            />
-            <p className="text-xs text-gray-400 mb-2">{t.tmdbKeyHelp}</p>
+      <CardContent>
+        {/* TMDB API Key Section */}
+        <div className="mb-6 p-4 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
+          <div className="flex items-start gap-3 mb-3">
+            <AlertCircle className="w-5 h-5 text-yellow-400 mt-0.5" />
+            <div>
+              <h4 className="text-yellow-400 font-medium mb-1">{t.apiKeyTitle}</h4>
+              <p className="text-sm text-gray-300 mb-2">{t.apiKeyDescription}</p>
+              <p className="text-xs text-gray-400">{t.withoutApiKey}</p>
+            </div>
+          </div>
+          
+          <div className="flex gap-2 flex-wrap">
             <Button
+              onClick={() => window.open('https://www.themoviedb.org/settings/api', '_blank')}
               variant="outline"
               size="sm"
-              onClick={() => window.open('https://www.themoviedb.org/settings/api', '_blank')}
-              className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+              className="border-yellow-600 text-yellow-400 hover:bg-yellow-600 hover:text-white text-xs"
             >
+              <Key className="w-3 h-3 mr-1" />
               {t.getApiKey}
             </Button>
+            
+            <Button
+              onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+              variant="outline"
+              size="sm"
+              className="border-gray-600 text-gray-400 hover:bg-gray-600 hover:text-white text-xs"
+            >
+              {showApiKeyInput ? t.hideApiKey : t.enterApiKey}
+            </Button>
           </div>
-        )}
-
-        <div>
-          <label className="block text-sm font-medium mb-2 text-gray-300">
-            {t.platforms}
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {platforms.map(platform => (
-              <div key={platform} className="flex items-center space-x-2">
-                <Checkbox
-                  id={platform}
-                  checked={selectedPlatforms.includes(platform)}
-                  onCheckedChange={() => togglePlatform(platform)}
-                  className="border-gray-600"
-                />
-                <label
-                  htmlFor={platform}
-                  className="text-sm text-gray-200 cursor-pointer"
-                >
-                  {platform}
-                </label>
-              </div>
-            ))}
-          </div>
+          
+          {showApiKeyInput && (
+            <div className="mt-3">
+              <Input
+                type="password"
+                placeholder="Introdu TMDB API Key aici..."
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="bg-gray-800/80 border-gray-600 text-white text-sm"
+              />
+            </div>
+          )}
         </div>
-        
-        <Button
-          onClick={handleSuggestMovies}
-          disabled={selectedPlatforms.length === 0 || isLoading}
-          className="w-full bg-red-600 hover:bg-red-700 text-white"
-        >
-          <Shuffle className="w-4 h-4 mr-2" />
-          {isLoading ? 'Se caută...' : t.suggest}
-        </Button>
 
-        {suggestedMovies.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-red-400 mb-4 flex items-center gap-2">
-              <Film className="w-5 h-5" />
-              {t.suggestedMovies}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-              {suggestedMovies.map((movie, index) => (
-                <div key={index} className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                  <div className="flex gap-3">
-                    {movie.poster && (
-                      <img 
-                        src={movie.poster} 
-                        alt={movie.title}
-                        className="w-16 h-24 object-cover rounded"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-white truncate">
-                        {movie.title} ({movie.year})
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Star className="w-4 h-4 text-yellow-400" />
-                        <span className="text-sm text-gray-300">{movie.rating}</span>
-                      </div>
-                      <p className="text-sm text-gray-400 mt-2 line-clamp-2">
-                        {movie.overview}
-                      </p>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {movie.platforms.slice(0, 2).map(platform => (
-                          <span key={platform} className="text-xs bg-blue-600/20 text-blue-400 px-2 py-1 rounded">
-                            {platform}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+        <p className="text-gray-300 mb-4 text-sm sm:text-base">{t.subtitle}</p>
+        
+        <h4 className="text-white font-medium mb-3">{t.platforms}</h4>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-6">
+          {platforms.map(platform => (
+            <div key={platform} className="flex items-center space-x-2">
+              <Checkbox
+                id={platform}
+                checked={selectedPlatforms.includes(platform)}
+                onCheckedChange={() => togglePlatform(platform)}
+                className="border-gray-600"
+              />
+              <label 
+                htmlFor={platform}
+                className="text-sm text-gray-200 cursor-pointer"
+              >
+                {platform}
+              </label>
+            </div>
+          ))}
+        </div>
+
+        {selectedPlatforms.length > 0 && (
+          <div className="mb-4">
+            <h5 className="text-sm font-medium mb-2 text-gray-300">Platforme selectate:</h5>
+            <div className="flex gap-2 flex-wrap">
+              {selectedPlatforms.map(platform => (
+                <Badge key={platform} variant="secondary" className="bg-blue-600/20 text-blue-300">
+                  {platform}
+                </Badge>
               ))}
             </div>
           </div>
         )}
+
+        <Button 
+          onClick={handleSuggestMovie}
+          disabled={isLoading || selectedPlatforms.length === 0}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/30"
+        >
+          <Film className="w-4 h-4 mr-2" />
+          {isLoading ? 'Se caută...' : t.suggestMovie}
+        </Button>
       </CardContent>
     </Card>
   );

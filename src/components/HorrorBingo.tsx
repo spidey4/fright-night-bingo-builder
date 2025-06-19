@@ -57,6 +57,7 @@ const HorrorBingo = () => {
   const [vsGameState, setVSGameState] = useState<VSGameState | null>(null);
   const [showQRCode, setShowQRCode] = useState(false);
   const [isSharedCard, setIsSharedCard] = useState(false);
+  const [showThemeSelector, setShowThemeSelector] = useState(false);
   const { toast } = useToast();
 
   const translations = {
@@ -84,7 +85,10 @@ const HorrorBingo = () => {
       sharedCard: "Card Partajat",
       createNew: "Creează Card Nou",
       themes: "Teme pentru filme",
-      selectMultipleThemes: "Selectează mai multe teme"
+      selectMultipleThemes: "Selectează mai multe teme",
+      showThemes: "Arată Teme",
+      hideThemes: "Ascunde Teme",
+      selectedThemes: "Teme selectate"
     },
     en: {
       title: "Horror Bingo",
@@ -110,7 +114,10 @@ const HorrorBingo = () => {
       sharedCard: "Shared Card",
       createNew: "Create New Card",
       themes: "Movie themes",
-      selectMultipleThemes: "Select multiple themes"
+      selectMultipleThemes: "Select multiple themes",
+      showThemes: "Show Themes",
+      hideThemes: "Hide Themes",
+      selectedThemes: "Selected themes"
     }
   };
 
@@ -366,17 +373,17 @@ const HorrorBingo = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black text-white p-4">
       <StardustLogo />
-      <div className="max-w-6xl mx-auto pt-8">
+      <div className="max-w-6xl mx-auto pt-8 px-2 sm:px-4">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Skull className="w-12 h-12 text-red-500" />
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent">
+            <Skull className="w-8 h-8 sm:w-12 sm:h-12 text-red-500" />
+            <h1 className="text-3xl sm:text-5xl font-bold bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent">
               {t.title}
             </h1>
-            <Skull className="w-12 h-12 text-red-500" />
+            <Skull className="w-8 h-8 sm:w-12 sm:h-12 text-red-500" />
           </div>
-          <p className="text-xl text-gray-300 mb-4">{t.subtitle}</p>
+          <p className="text-lg sm:text-xl text-gray-300 mb-4">{t.subtitle}</p>
           <p className="text-sm text-pink-300 italic mb-6">✨ {t.madeFor} ✨</p>
           
           {isSharedCard && (
@@ -400,36 +407,36 @@ const HorrorBingo = () => {
             <Button
               onClick={() => setShowSettings(!showSettings)}
               variant="outline"
-              className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+              className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white text-xs sm:text-sm"
             >
-              <Settings className="w-4 h-4 mr-2" />
+              <Settings className="w-4 h-4 mr-1 sm:mr-2" />
               {showSettings ? t.hideSettings : t.settings}
             </Button>
             
             <Button
               onClick={() => setShowClicheExcluder(!showClicheExcluder)}
               variant="outline"
-              className="border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white"
+              className="border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white text-xs sm:text-sm"
             >
-              <Filter className="w-4 h-4 mr-2" />
+              <Filter className="w-4 h-4 mr-1 sm:mr-2" />
               {t.excludeCliches}
             </Button>
             
             <Button
               onClick={() => setShowMovieSuggester(!showMovieSuggester)}
               variant="outline"
-              className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+              className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white text-xs sm:text-sm"
             >
-              <Film className="w-4 h-4 mr-2" />
+              <Film className="w-4 h-4 mr-1 sm:mr-2" />
               {t.movieSuggester}
             </Button>
             
             <Button
               onClick={() => setShowVSMode(!showVSMode)}
               variant="outline"
-              className="border-green-500 text-green-400 hover:bg-green-500 hover:text-white"
+              className="border-green-500 text-green-400 hover:bg-green-500 hover:text-white text-xs sm:text-sm"
             >
-              <Users className="w-4 h-4 mr-2" />
+              <Users className="w-4 h-4 mr-1 sm:mr-2" />
               {t.vsMode}
             </Button>
 
@@ -437,9 +444,9 @@ const HorrorBingo = () => {
               <Button
                 onClick={() => setShowQRCode(!showQRCode)}
                 variant="outline"
-                className="border-orange-500 text-orange-400 hover:bg-orange-500 hover:text-white"
+                className="border-orange-500 text-orange-400 hover:bg-orange-500 hover:text-white text-xs sm:text-sm"
               >
-                <QrCode className="w-4 h-4 mr-2" />
+                <QrCode className="w-4 h-4 mr-1 sm:mr-2" />
                 {t.qrCode}
               </Button>
             )}
@@ -496,7 +503,7 @@ const HorrorBingo = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-300">
                     {t.language}
@@ -529,30 +536,48 @@ const HorrorBingo = () => {
                 </div>
               </div>
 
-              {/* New: Multiple Themes Selection */}
+              {/* Theme Selection with Dropdown */}
               <div className="mt-6">
-                <label className="block text-sm font-medium mb-3 text-gray-300">
-                  {t.themes}
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {Object.entries(bingoThemes).map(([key, theme]) => (
-                    <div key={key} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={key}
-                        checked={selectedThemes.includes(key)}
-                        onCheckedChange={() => toggleTheme(key)}
-                        className="border-gray-600"
-                      />
-                      <label
-                        htmlFor={key}
-                        className="text-sm text-gray-200 cursor-pointer"
-                      >
-                        {theme.name[language]}
-                      </label>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-300">
+                    {t.themes}
+                  </label>
+                  <Button
+                    onClick={() => setShowThemeSelector(!showThemeSelector)}
+                    variant="outline"
+                    size="sm"
+                    className="border-gray-600 text-gray-400 hover:bg-gray-700"
+                  >
+                    {showThemeSelector ? t.hideThemes : t.showThemes}
+                  </Button>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">{t.selectMultipleThemes}</p>
+                
+                <div className="mb-3">
+                  <p className="text-sm text-gray-400">
+                    {t.selectedThemes}: {selectedThemes.map(theme => bingoThemes[theme]?.name[language]).join(', ')}
+                  </p>
+                </div>
+
+                {showThemeSelector && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                    {Object.entries(bingoThemes).map(([key, theme]) => (
+                      <div key={key} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={key}
+                          checked={selectedThemes.includes(key)}
+                          onCheckedChange={() => toggleTheme(key)}
+                          className="border-gray-600"
+                        />
+                        <label
+                          htmlFor={key}
+                          className="text-sm text-gray-200 cursor-pointer"
+                        >
+                          {theme.name[language]}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="mt-6">
@@ -563,27 +588,27 @@ const HorrorBingo = () => {
                 />
               </div>
 
-              <div className="flex gap-4 mt-6 flex-wrap">
+              <div className="flex gap-2 sm:gap-4 mt-6 flex-wrap">
                 <Button 
                   onClick={generateBingoCard}
-                  className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/30"
+                  className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/30 text-xs sm:text-sm"
                 >
-                  <RefreshCw className="w-4 h-4 mr-2" />
+                  <RefreshCw className="w-4 h-4 mr-1 sm:mr-2" />
                   {t.generateCard}
                 </Button>
                 <Button 
                   onClick={resetCard}
                   variant="outline"
-                  className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                  className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white text-xs sm:text-sm"
                 >
                   {t.resetCard}
                 </Button>
                 <Button 
                   onClick={handleDownload}
                   variant="outline"
-                  className="border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white"
+                  className="border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white text-xs sm:text-sm"
                 >
-                  <Download className="w-4 h-4 mr-2" />
+                  <Download className="w-4 h-4 mr-1 sm:mr-2" />
                   {t.downloadCard}
                 </Button>
               </div>
@@ -594,25 +619,26 @@ const HorrorBingo = () => {
         {/* Bingo Card */}
         {bingoCard.length > 0 && (
           <Card className="bg-gray-900/70 border-red-600/40 backdrop-blur-sm shadow-2xl shadow-red-900/30">
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-6">
               <div 
                 id="bingo-card"
-                className={`grid gap-3 mx-auto max-w-4xl`}
+                className={`grid gap-2 sm:gap-3 mx-auto`}
                 style={{ 
                   gridTemplateColumns: `repeat(${cardSize}, 1fr)`,
-                  aspectRatio: '1'
+                  aspectRatio: '1',
+                  maxWidth: '100%'
                 }}
               >
                 {bingoCard.map((cell, index) => (
                   <div
                     key={index}
                     className={`
-                      relative group border-2 rounded-lg p-3 cursor-pointer transition-all duration-300
+                      relative group border-2 rounded-lg p-2 sm:p-3 cursor-pointer transition-all duration-300
                       ${cell.isChecked 
                         ? 'bg-gradient-to-br from-red-600 to-red-700 border-red-400 shadow-lg shadow-red-500/30 transform scale-105' 
                         : 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-600/50 hover:border-red-500/60 hover:bg-gradient-to-br hover:from-gray-700/80 hover:to-gray-800/80 hover:shadow-lg hover:shadow-red-900/20'
                       }
-                      min-h-[80px] flex flex-col items-center justify-center text-center
+                      min-h-[60px] sm:min-h-[80px] flex flex-col items-center justify-center text-center
                       backdrop-blur-sm
                     `}
                     onClick={() => !cell.isEditing && toggleCell(index)}
@@ -645,7 +671,7 @@ const HorrorBingo = () => {
                       </div>
                     ) : (
                       <>
-                        <span className={`text-xs font-medium leading-tight ${cell.isChecked ? 'text-white' : 'text-gray-200'}`}>
+                        <span className={`text-xs sm:text-sm font-medium leading-tight ${cell.isChecked ? 'text-white' : 'text-gray-200'}`}>
                           {cell.idea[language]}
                         </span>
                         <Button
@@ -661,8 +687,8 @@ const HorrorBingo = () => {
                         </Button>
                         {cell.isChecked && (
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center animate-pulse">
-                              <span className="text-2xl">💀</span>
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-black/20 flex items-center justify-center animate-pulse">
+                              <span className="text-lg sm:text-2xl">💀</span>
                             </div>
                           </div>
                         )}
