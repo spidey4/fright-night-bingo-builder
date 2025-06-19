@@ -43,6 +43,7 @@ interface SharedCardData {
 const HorrorBingo = () => {
   const [language, setLanguage] = useState<Language>('ro');
   const [selectedTheme, setSelectedTheme] = useState('slasher');
+  const [selectedThemes, setSelectedThemes] = useState<string[]>(['slasher']); // New: multiple themes
   const [cardSize, setCardSize] = useState<CardSize>(5);
   const [bingoCard, setBingoCard] = useState<BingoCell[]>([]);
   const [showSettings, setShowSettings] = useState(true);
@@ -80,6 +81,8 @@ const HorrorBingo = () => {
       qrCode: "Cod QR",
       sharedCard: "Card Partajat",
       createNew: "Creează Card Nou",
+      themes: "Teme pentru filme",
+      selectMultipleThemes: "Selectează mai multe teme"
     },
     en: {
       title: "Horror Bingo",
@@ -104,6 +107,8 @@ const HorrorBingo = () => {
       qrCode: "QR Code",
       sharedCard: "Shared Card",
       createNew: "Create New Card",
+      themes: "Movie themes",
+      selectMultipleThemes: "Select multiple themes"
     }
   };
 
@@ -163,19 +168,46 @@ const HorrorBingo = () => {
     }
   }, []);
 
+  const toggleTheme = (theme: string) => {
+    setSelectedThemes(prev => {
+      if (prev.includes(theme)) {
+        // Don't allow removing the last theme
+        if (prev.length === 1) return prev;
+        return prev.filter(t => t !== theme);
+      } else {
+        return [...prev, theme];
+      }
+    });
+    
+    // Update single theme for backward compatibility
+    if (!selectedThemes.includes(theme)) {
+      setSelectedTheme(theme);
+    }
+  };
+
   const generateBingoCard = () => {
-    const theme = bingoThemes[selectedTheme];
-    let ideas = [...theme.ideas];
+    // Collect ideas from all selected themes
+    let allIdeas: BingoIdea[] = [];
+    
+    selectedThemes.forEach(themeKey => {
+      const theme = bingoThemes[themeKey];
+      if (theme) {
+        allIdeas = [...allIdeas, ...theme.ideas];
+      }
+    });
+    
+    // Remove duplicates based on the text in current language
+    const uniqueIdeas = allIdeas.filter((idea, index, arr) => 
+      arr.findIndex(item => item[language] === idea[language]) === index
+    );
     
     // Filter out excluded ideas
-    ideas = ideas.filter(idea => !excludedIdeas.includes(idea[language]));
+    let ideas = uniqueIdeas.filter(idea => !excludedIdeas.includes(idea[language]));
     
     // Apply difficulty filter
     if (difficulty < 30) {
-      // Common clichés - take first portion
       ideas = ideas.slice(0, Math.ceil(ideas.length * 0.6));
     } else if (difficulty > 70) {
-      // Rare clichés - take last portion
       ideas = ideas.slice(Math.floor(ideas.length * 0.4));
     }
     
@@ -327,7 +359,7 @@ const HorrorBingo = () => {
     if (bingoCard.length > 0 && !isSharedCard) {
       generateBingoCard();
     }
-  }, [language, selectedTheme, cardSize, difficulty, excludedIdeas]);
+  }, [language, selectedThemes, cardSize, difficulty, excludedIdeas]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black text-white p-4">
@@ -416,7 +448,7 @@ const HorrorBingo = () => {
         <div className="grid gap-6 mb-8">
           {showClicheExcluder && (
             <ClicheExcluder
-              allIdeas={bingoThemes[selectedTheme].ideas}
+              allIdeas={selectedThemes.flatMap(themeKey => bingoThemes[themeKey]?.ideas || [])}
               excludedIdeas={excludedIdeas}
               onToggleExclude={toggleExcludedIdea}
               onClose={() => setShowClicheExcluder(false)}
@@ -426,7 +458,7 @@ const HorrorBingo = () => {
           
           {showMovieSuggester && (
             <MovieSuggester
-              selectedTheme={selectedTheme}
+              selectedThemes={selectedThemes}
               language={language}
               onSuggestMovie={handleMovieSuggestion}
             />
@@ -462,7 +494,7 @@ const HorrorBingo = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-300">
                     {t.language}
@@ -474,24 +506,6 @@ const HorrorBingo = () => {
                     <SelectContent className="bg-gray-800 border-gray-600">
                       <SelectItem value="ro">Română</SelectItem>
                       <SelectItem value="en">English</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-300">
-                    {t.theme}
-                  </label>
-                  <Select value={selectedTheme} onValueChange={setSelectedTheme}>
-                    <SelectTrigger className="bg-gray-800/80 border-gray-600 text-white hover:border-red-500/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-600">
-                      {Object.entries(bingoThemes).map(([key, theme]) => (
-                        <SelectItem key={key} value={key}>
-                          {theme.name[language]}
-                        </SelectItem>
-                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -511,14 +525,40 @@ const HorrorBingo = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                <div>
-                  <DifficultySlider
-                    difficulty={difficulty}
-                    onDifficultyChange={setDifficulty}
-                    language={language}
-                  />
+              {/* New: Multiple Themes Selection */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium mb-3 text-gray-300">
+                  {t.themes}
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {Object.entries(bingoThemes).map(([key, theme]) => (
+                    <div key={key} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={key}
+                        checked={selectedThemes.includes(key)}
+                        onCheckedChange={() => toggleTheme(key)}
+                        className="border-gray-600"
+                      />
+                      <label
+                        htmlFor={key}
+                        className="text-sm text-gray-200 cursor-pointer"
+                      >
+                        {theme.name[language]}
+                      </label>
+                    </div>
+                  ))}
                 </div>
+                <p className="text-xs text-gray-400 mt-2">{t.selectMultipleThemes}</p>
+              </div>
+
+              <div className="mt-6">
+                <DifficultySlider
+                  difficulty={difficulty}
+                  onDifficultyChange={setDifficulty}
+                  language={language}
+                />
               </div>
 
               <div className="flex gap-4 mt-6 flex-wrap">
