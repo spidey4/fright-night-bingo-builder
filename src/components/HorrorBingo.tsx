@@ -15,6 +15,10 @@ import { RefreshCw, Download, Users, Settings, ChevronUp, ChevronDown } from 'lu
 import { useToast } from '@/hooks/use-toast';
 import { bingoIdeas, BingoIdea } from '@/data/bingoIdeas';
 import { downloadBingoCard } from '@/utils/cardDownloader';
+import ClicheExcluder from './ClicheExcluder';
+import VSMode from './VSMode';
+import QRCodeShare from './QRCodeShare';
+import MovieSuggester from './MovieSuggester';
 
 type DifficultyLevel = 'easy' | 'medium' | 'hard' | 'all';
 
@@ -25,6 +29,8 @@ const HorrorBingo = () => {
   const [excludedIdeas, setExcludedIdeas] = useState<string[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showVSMode, setShowVSMode] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [showMovieSuggester, setShowMovieSuggester] = useState(false);
   
   const [selectedTheme, setSelectedTheme] = useState('classic');
   const [showThemeSelector, setShowThemeSelector] = useState(false);
@@ -194,6 +200,22 @@ const HorrorBingo = () => {
           </Button>
 
           <Button 
+            onClick={() => setShowQRCode(!showQRCode)}
+            className={`${currentTheme.cardBg} ${currentTheme.border} border hover:bg-gray-700/80 text-white backdrop-blur-sm`}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Partajează
+          </Button>
+
+          <Button 
+            onClick={() => setShowMovieSuggester(!showMovieSuggester)}
+            className={`${currentTheme.cardBg} ${currentTheme.border} border hover:bg-gray-700/80 text-white backdrop-blur-sm`}
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Sugerează Film
+          </Button>
+
+          <Button 
             onClick={() => setShowSettings(!showSettings)}
             className={`${currentTheme.cardBg} ${currentTheme.border} border hover:bg-gray-700/80 text-white backdrop-blur-sm`}
           >
@@ -223,8 +245,38 @@ const HorrorBingo = () => {
                   </SelectContent>
                 </Select>
               </div>
+              
+              <ClicheExcluder 
+                excludedIdeas={excludedIdeas}
+                onExcludedIdeasChange={setExcludedIdeas}
+                theme={currentTheme}
+              />
             </CardContent>
           </Card>
+        )}
+
+        {/* VS Mode */}
+        {showVSMode && (
+          <VSMode 
+            theme={currentTheme}
+            onClose={() => setShowVSMode(false)}
+          />
+        )}
+
+        {/* QR Code Share */}
+        {showQRCode && (
+          <QRCodeShare
+            bingoCard={currentCard}
+            language="ro"
+            selectedTheme={selectedTheme}
+            cardSize="normal"
+            onClose={() => setShowQRCode(false)}
+          />
+        )}
+
+        {/* Movie Suggester */}
+        {showMovieSuggester && (
+          <MovieSuggester />
         )}
 
         {/* Bingo Card */}
