@@ -42,7 +42,8 @@ const MovieSuggester = ({ selectedThemes, language, onSuggestMovie }: MovieSugge
       enterApiKey: "Introdu API Key",
       hideApiKey: "Ascunde",
       withoutApiKey: "Fără API key vei primi doar câteva filme din baza noastră locală.",
-      foundMovies: "filme găsite"
+      foundMovies: "filme găsite",
+      searching: "Se caută..."
     },
     en: {
       title: "Horror Movie Suggester",
@@ -58,7 +59,8 @@ const MovieSuggester = ({ selectedThemes, language, onSuggestMovie }: MovieSugge
       enterApiKey: "Enter API Key",
       hideApiKey: "Hide",
       withoutApiKey: "Without API key you'll get only a few movies from our local database.",
-      foundMovies: "movies found"
+      foundMovies: "movies found",
+      searching: "Searching..."
     }
   };
 
@@ -86,6 +88,7 @@ const MovieSuggester = ({ selectedThemes, language, onSuggestMovie }: MovieSugge
     
     try {
       const movies = await searchMoviesByThemes(selectedThemes, apiKey);
+      console.log('Movies found:', movies.length, movies);
       
       if (movies.length > 0) {
         // Filter by available platforms
@@ -93,32 +96,44 @@ const MovieSuggester = ({ selectedThemes, language, onSuggestMovie }: MovieSugge
           movie.platforms.some(platform => selectedPlatforms.includes(platform))
         );
         
+        console.log('Available movies after platform filter:', availableMovies.length, availableMovies);
+        
         if (availableMovies.length > 0) {
           const randomMovie = availableMovies[Math.floor(Math.random() * availableMovies.length)];
+          
+          // Show detailed movie suggestion
           toast({
             title: `🎬 ${randomMovie.title} (${randomMovie.year})`,
-            description: `⭐ ${randomMovie.rating}/10 - ${randomMovie.platforms.join(', ')}\n\n${randomMovie.overview}`,
-            duration: 8000,
+            description: `⭐ ${randomMovie.rating}/10\n📺 ${randomMovie.platforms.join(', ')}\n\n${randomMovie.overview.slice(0, 150)}${randomMovie.overview.length > 150 ? '...' : ''}`,
+            duration: 10000,
+          });
+          
+          // Show count of movies found
+          toast({
+            title: `${movies.length} ${t.foundMovies}`,
+            description: `${availableMovies.length} disponibile pe platformele tale${apiKey ? ' (Cu TMDB API)' : ' (Din baza locală)'}`,
           });
         } else {
           toast({
-            title: t.noMovieFoun,
-            description: t.tryDifferent,
+            title: t.noMovieFound,
+            description: `${movies.length} ${t.foundMovies}, dar niciunul pe platformele selectate. ${t.tryDifferent}`,
             variant: "destructive"
           });
         }
-        
-        // Show count of total movies found
-        toast({
-          title: `${movies.length} ${t.foundMovies}`,
-          description: apiKey ? "Cu TMDB API" : "Din baza locală",
-        });
       } else {
-        onSuggestMovie(selectedPlatforms);
+        toast({
+          title: t.noMovieFound,
+          description: t.tryDifferent,
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Error suggesting movie:', error);
-      onSuggestMovie(selectedPlatforms);
+      toast({
+        title: "Eroare",
+        description: "A apărut o eroare la căutarea filmelor. Încearcă din nou.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -229,7 +244,7 @@ const MovieSuggester = ({ selectedThemes, language, onSuggestMovie }: MovieSugge
           className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/30"
         >
           <Film className="w-4 h-4 mr-2" />
-          {isLoading ? 'Se caută...' : t.suggestMovie}
+          {isLoading ? t.searching : t.suggestMovie}
         </Button>
       </CardContent>
     </Card>
