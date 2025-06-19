@@ -3,34 +3,34 @@ export interface Movie {
   title: string;
   year: number;
   platforms: string[];
-  themes: string[];
+  theme: string;
 }
 
-// Sample horror movie database - enhanced with multiple themes
+// Sample horror movie database - in a real app this would come from an API
 const horrorMovies: Movie[] = [
-  { title: "Halloween", year: 1978, platforms: ["Shudder", "Amazon Prime"], themes: ["slasher", "horror"] },
-  { title: "Friday the 13th", year: 1980, platforms: ["Paramount+", "Amazon Prime"], themes: ["slasher", "horror"] },
-  { title: "A Nightmare on Elm Street", year: 1984, platforms: ["HBO Max", "Hulu"], themes: ["slasher", "supernatural", "horror"] },
-  { title: "Scream", year: 1996, platforms: ["Netflix", "Amazon Prime"], themes: ["slasher", "horror"] },
-  { title: "The Conjuring", year: 2013, platforms: ["HBO Max", "Netflix"], themes: ["supernatural", "horror"] },
-  { title: "Insidious", year: 2010, platforms: ["Netflix", "Amazon Prime"], themes: ["supernatural", "horror"] },
-  { title: "The Ring", year: 2002, platforms: ["Paramount+", "Amazon Prime"], themes: ["supernatural", "horror"] },
-  { title: "Dawn of the Dead", year: 2004, platforms: ["Netflix", "Amazon Prime"], themes: ["zombie", "horror"] },
-  { title: "28 Days Later", year: 2002, platforms: ["Hulu", "Amazon Prime"], themes: ["zombie", "horror"] },
-  { title: "World War Z", year: 2013, platforms: ["Paramount+", "Netflix"], themes: ["zombie", "action", "horror"] },
-  { title: "Psycho", year: 1960, platforms: ["Amazon Prime", "Hulu"], themes: ["psychological", "thriller"] },
-  { title: "Black Swan", year: 2010, platforms: ["Netflix", "Hulu"], themes: ["psychological", "drama"] },
-  { title: "Shutter Island", year: 2010, platforms: ["Netflix", "Amazon Prime"], themes: ["psychological", "thriller"] },
-  { title: "Paranormal Activity", year: 2007, platforms: ["Paramount+", "Amazon Prime"], themes: ["paranormal", "horror"] },
-  { title: "The Blair Witch Project", year: 1999, platforms: ["Hulu", "Amazon Prime"], themes: ["paranormal", "horror"] },
-  { title: "The Exorcist", year: 1973, platforms: ["HBO Max", "Amazon Prime"], themes: ["possession", "supernatural", "horror"] },
-  { title: "The Amityville Horror", year: 1979, platforms: ["Amazon Prime", "Tubi"], themes: ["hauntedHouse", "supernatural", "horror"] },
-  { title: "Annabelle", year: 2014, platforms: ["HBO Max", "Netflix"], themes: ["cursedDoll", "supernatural", "horror"] }
+  { title: "Halloween", year: 1978, platforms: ["Shudder", "Amazon Prime"], theme: "slasher" },
+  { title: "Friday the 13th", year: 1980, platforms: ["Paramount+", "Amazon Prime"], theme: "slasher" },
+  { title: "A Nightmare on Elm Street", year: 1984, platforms: ["HBO Max", "Hulu"], theme: "slasher" },
+  { title: "Scream", year: 1996, platforms: ["Netflix", "Amazon Prime"], theme: "slasher" },
+  { title: "The Conjuring", year: 2013, platforms: ["HBO Max", "Netflix"], theme: "supernatural" },
+  { title: "Insidious", year: 2010, platforms: ["Netflix", "Amazon Prime"], theme: "supernatural" },
+  { title: "The Ring", year: 2002, platforms: ["Paramount+", "Amazon Prime"], theme: "supernatural" },
+  { title: "Dawn of the Dead", year: 2004, platforms: ["Netflix", "Amazon Prime"], theme: "zombie" },
+  { title: "28 Days Later", year: 2002, platforms: ["Hulu", "Amazon Prime"], theme: "zombie" },
+  { title: "World War Z", year: 2013, platforms: ["Paramount+", "Netflix"], theme: "zombie" },
+  { title: "Psycho", year: 1960, platforms: ["Amazon Prime", "Hulu"], theme: "psychological" },
+  { title: "Black Swan", year: 2010, platforms: ["Netflix", "Hulu"], theme: "psychological" },
+  { title: "Shutter Island", year: 2010, platforms: ["Netflix", "Amazon Prime"], theme: "psychological" },
+  { title: "Paranormal Activity", year: 2007, platforms: ["Paramount+", "Amazon Prime"], theme: "paranormal" },
+  { title: "The Blair Witch Project", year: 1999, platforms: ["Hulu", "Amazon Prime"], theme: "paranormal" },
+  { title: "The Exorcist", year: 1973, platforms: ["HBO Max", "Amazon Prime"], theme: "possession" },
+  { title: "The Amityville Horror", year: 1979, platforms: ["Amazon Prime", "Tubi"], theme: "hauntedHouse" },
+  { title: "Annabelle", year: 2014, platforms: ["HBO Max", "Netflix"], theme: "cursedDoll" }
 ];
 
-export const suggestRandomMovie = (themes: string[], availablePlatforms: string[]): Movie | null => {
+export const suggestRandomMovie = (theme: string, availablePlatforms: string[]): Movie | null => {
   const matchingMovies = horrorMovies.filter(movie => 
-    themes.some(theme => movie.themes.includes(theme)) &&
+    movie.theme === theme && 
     movie.platforms.some(platform => availablePlatforms.includes(platform))
   );
 
@@ -40,15 +40,4 @@ export const suggestRandomMovie = (themes: string[], availablePlatforms: string[
 
   const randomIndex = Math.floor(Math.random() * matchingMovies.length);
   return matchingMovies[randomIndex];
-};
-
-export const suggestMultipleMovies = (themes: string[], availablePlatforms: string[], count: number = 5): Movie[] => {
-  const matchingMovies = horrorMovies.filter(movie => 
-    themes.some(theme => movie.themes.includes(theme)) &&
-    movie.platforms.some(platform => availablePlatforms.includes(platform))
-  );
-
-  // Shuffle and return up to `count` movies
-  const shuffled = matchingMovies.sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
 };
