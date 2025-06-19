@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, QrCode } from 'lucide-react';
 import { bingoThemes, BingoIdea } from '@/data/bingoData';
 import StardustLogo from '@/components/StardustLogo';
@@ -298,7 +300,7 @@ const HorrorBingo = () => {
   };
 
   const handleMovieSuggestion = (platforms: string[]) => {
-    const movie = suggestRandomMovie(selectedTheme, platforms);
+    const movie = suggestRandomMovie(selectedThemes, platforms);
     if (movie) {
       toast({
         title: t.suggestedMovie,
