@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,27 +13,16 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { RefreshCw, Download, Users, Settings, ChevronUp, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { bingoData } from '@/data/bingoData';
-import DifficultySlider from './DifficultySlider';
-import ClicheExcluder from './ClicheExcluder';
-import VSMode from './VSMode';
-import QRCodeShare from './QRCodeShare';
-import MovieSuggester from './MovieSuggester';
-import { downloadCard } from '@/utils/downloadCard';
+import { bingoIdeas, BingoIdea } from '@/data/bingoIdeas';
+import { downloadBingoCard } from '@/utils/cardDownloader';
 
-interface BingoItem {
-  text: string;
-  difficulty?: 'Ușor' | 'Mediu' | 'Greu';
-  cliche?: string;
-}
-
-type DifficultyLevel = 'Ușor' | 'Mediu' | 'Greu';
+type DifficultyLevel = 'easy' | 'medium' | 'hard' | 'all';
 
 const HorrorBingo = () => {
-  const [currentCard, setCurrentCard] = useState<BingoItem[]>([]);
+  const [currentCard, setCurrentCard] = useState<BingoIdea[]>([]);
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
-  const [difficulty, setDifficulty] = useState<DifficultyLevel>('Mediu');
-  const [excludedCliches, setExcludedCliches] = useState<string[]>([]);
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
+  const [excludedIdeas, setExcludedIdeas] = useState<string[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showVSMode, setShowVSMode] = useState(false);
   
@@ -43,12 +33,12 @@ const HorrorBingo = () => {
 
   useEffect(() => {
     generateNewCard();
-  }, [difficulty, excludedCliches]);
+  }, [difficulty, excludedIdeas]);
 
   const generateNewCard = () => {
-    let filteredData = bingoData.filter(item => !excludedCliches.includes(item.cliche || ''));
+    let filteredData = bingoIdeas.filter(item => !excludedIdeas.includes(item.ro));
 
-    if (difficulty !== 'Toate') {
+    if (difficulty !== 'all') {
       filteredData = filteredData.filter(item => item.difficulty === difficulty);
     }
 
@@ -61,7 +51,7 @@ const HorrorBingo = () => {
       return;
     }
 
-    const newCard: BingoItem[] = [];
+    const newCard: BingoIdea[] = [];
     const usedIndices: number[] = [];
 
     while (newCard.length < 25 && usedIndices.length < filteredData.length) {
@@ -188,7 +178,7 @@ const HorrorBingo = () => {
           </Button>
           
           <Button 
-            onClick={downloadCard}
+            onClick={downloadBingoCard}
             className={`${currentTheme.cardBg} ${currentTheme.border} border hover:bg-gray-700/80 text-white backdrop-blur-sm`}
           >
             <Download className="w-4 h-4 mr-2" />
@@ -219,26 +209,22 @@ const HorrorBingo = () => {
               <CardTitle className={currentTheme.accent}>Setări</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <DifficultySlider 
-                difficulty={difficulty} 
-                onDifficultyChange={setDifficulty}
-                theme={currentTheme}
-              />
-              <ClicheExcluder 
-                excludedCliches={excludedCliches}
-                onExcludedClichesChange={setExcludedCliches}
-                theme={currentTheme}
-              />
+              <div className="space-y-3">
+                <label className="text-gray-300 block">Dificultate:</label>
+                <Select value={difficulty} onValueChange={(value: DifficultyLevel) => setDifficulty(value)}>
+                  <SelectTrigger className="bg-gray-800/50 border-gray-600">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-600">
+                    <SelectItem value="easy" className="text-white hover:bg-gray-700">Ușor</SelectItem>
+                    <SelectItem value="medium" className="text-white hover:bg-gray-700">Mediu</SelectItem>
+                    <SelectItem value="hard" className="text-white hover:bg-gray-700">Greu</SelectItem>
+                    <SelectItem value="all" className="text-white hover:bg-gray-700">Toate</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* VS Mode */}
-        {showVSMode && (
-          <VSMode 
-            onClose={() => setShowVSMode(false)}
-            theme={currentTheme}
-          />
         )}
 
         {/* Bingo Card */}
@@ -263,7 +249,7 @@ const HorrorBingo = () => {
                   <span className={`text-xs md:text-sm font-medium z-10 ${
                     checkedItems.includes(index) ? 'text-white' : 'text-gray-200'
                   }`}>
-                    {item.text}
+                    {item.ro}
                   </span>
                   
                   {item.difficulty && (
@@ -275,7 +261,7 @@ const HorrorBingo = () => {
                           : 'bg-gray-700/80 text-gray-300'
                       }`}
                     >
-                      {item.difficulty}
+                      {item.difficulty === 'easy' ? 'Ușor' : item.difficulty === 'medium' ? 'Mediu' : 'Greu'}
                     </Badge>
                   )}
 
@@ -298,11 +284,6 @@ const HorrorBingo = () => {
             )}
           </CardContent>
         </Card>
-
-        <div className="flex flex-wrap justify-center gap-4">
-          <QRCodeShare />
-          <MovieSuggester theme={currentTheme} />
-        </div>
       </div>
     </div>
   );
