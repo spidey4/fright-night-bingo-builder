@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, QrCode, ChevronDown, ChevronUp } from 'lucide-react';
+import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, QrCode, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { bingoThemes, BingoIdea } from '@/data/bingoData';
 import StardustLogo from '@/components/StardustLogo';
 import DifficultySlider from '@/components/DifficultySlider';
@@ -16,6 +16,7 @@ import { downloadBingoCard } from '@/utils/downloadCard';
 import { suggestRandomMovie } from '@/utils/movieSuggester';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
+import { CheckedState } from '@radix-ui/react-checkbox';
 
 type Language = 'ro' | 'en';
 type CardSize = 3 | 4 | 5;
@@ -34,9 +35,15 @@ interface VSGameState {
   currentRound: number;
 }
 
+interface CustomTheme {
+  id: string;
+  name: { ro: string; en: string };
+  ideas: BingoIdea[];
+}
+
 const HorrorBingo = () => {
   const [language, setLanguage] = useState<Language>('ro');
-  const [selectedThemes, setSelectedThemes] = useState<string[]>(['slasher']); // Changed to array
+  const [selectedThemes, setSelectedThemes] = useState<string[]>(['slasher']);
   const [cardSize, setCardSize] = useState<CardSize>(5);
   const [bingoCard, setBingoCard] = useState<BingoCell[]>([]);
   const [showSettings, setShowSettings] = useState(true);
@@ -49,8 +56,66 @@ const HorrorBingo = () => {
   const [vsGameState, setVSGameState] = useState<VSGameState | null>(null);
   const [showQRCode, setShowQRCode] = useState(false);
   const [isSharedCard, setIsSharedCard] = useState(false);
-  const [includeCursedDoll, setIncludeCursedDoll] = useState(false); // New state for cursed doll
+  const [includeCursedDoll, setIncludeCursedDoll] = useState(false);
+  const [includeJumpscare, setIncludeJumpscare] = useState(false);
+  const [includeGothic, setIncludeGothic] = useState(false);
+  const [includeCult, setIncludeCult] = useState(false);
+  const [includeZombie, setIncludeZombie] = useState(false);
+  const [customThemes, setCustomThemes] = useState<CustomTheme[]>([]);
+  const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
+  const [newThemeName, setNewThemeName] = useState({ ro: '', en: '' });
+  const [newThemeIdeas, setNewThemeIdeas] = useState<{ ro: string; en: string }[]>([{ ro: '', en: '' }]);
   const { toast } = useToast();
+
+  // Additional optional themes
+  const optionalThemes = {
+    cursedDoll: {
+      name: { ro: 'Păpuși Blestemate', en: 'Cursed Dolls' },
+      ideas: [
+        { ro: 'Păpușa se mișcă singură', en: 'Doll moves by itself' },
+        { ro: 'Ochii păpușii te urmăresc', en: 'Doll eyes follow you' },
+        { ro: 'Păpușa vorbește în timpul nopții', en: 'Doll talks at night' }
+      ]
+    },
+    jumpscare: {
+      name: { ro: 'Jump Scare Clasic', en: 'Classic Jump Scare' },
+      ideas: [
+        { ro: 'Oglinda se sparge brusc', en: 'Mirror suddenly breaks' },
+        { ro: 'Mâna iese din întuneric', en: 'Hand emerges from darkness' },
+        { ro: 'Șoaptă din spatele personajului', en: 'Whisper behind character' },
+        { ro: 'Ceva cade din dulap', en: 'Something falls from closet' }
+      ]
+    },
+    gothic: {
+      name: { ro: 'Horror Gotic', en: 'Gothic Horror' },
+      ideas: [
+        { ro: 'Casă victoriana în paragină', en: 'Decaying Victorian house' },
+        { ro: 'Portrete care te privesc', en: 'Portraits that watch you' },
+        { ro: 'Cimitir în ceață', en: 'Foggy cemetery' },
+        { ro: 'Pasaje secrete în ziduri', en: 'Secret passages in walls' },
+        { ro: 'Muzică de pian fantomatică', en: 'Ghostly piano music' }
+      ]
+    },
+    cult: {
+      name: { ro: 'Culte și Ritualuri', en: 'Cults & Rituals' },
+      ideas: [
+        { ro: 'Ritual în pădure', en: 'Forest ritual' },
+        { ro: 'Simboluri ciudate pe ziduri', en: 'Strange symbols on walls' },
+        { ro: 'Cântece în limbi străine', en: 'Chanting in foreign tongues' },
+        { ro: 'Sacrificiu animal', en: 'Animal sacrifice' }
+      ]
+    },
+    zombie: {
+      name: { ro: 'Apocalipsa Zombie', en: 'Zombie Apocalypse' },
+      ideas: [
+        { ro: 'Hoardă de zombi', en: 'Zombie horde' },
+        { ro: 'Refugiu improvizat', en: 'Makeshift shelter' },
+        { ro: 'Hrană pe terminate', en: 'Running out of food' },
+        { ro: 'Unul dintre grup e infectat', en: 'One of the group is infected' },
+        { ro: 'Radio cu mesaje de urgență', en: 'Radio with emergency broadcasts' }
+      ]
+    }
+  };
 
   const translations = {
     ro: {
@@ -79,7 +144,20 @@ const HorrorBingo = () => {
       sharedCard: "Card Partajat",
       createNew: "Creează Card Nou",
       cursedDollOption: "Include elemente păpușă blestemată",
-      selectMultiple: "Selectează mai multe teme pentru varietate"
+      jumpscareOption: "Include jump scare-uri clasice",
+      gothicOption: "Include elemente gotice",
+      cultOption: "Include culte și ritualuri",
+      zombieOption: "Include elemente zombie",
+      selectMultiple: "Selectează mai multe teme pentru varietate",
+      optionalThemes: "Teme Opționale",
+      customThemes: "Teme Personalizate",
+      createCustomTheme: "Creează Temă Nouă",
+      themeName: "Numele temei",
+      themeIdeas: "Idei pentru temă",
+      addIdea: "Adaugă Idee",
+      removeIdea: "Șterge Idee",
+      saveTheme: "Salvează Tema",
+      cancelTheme: "Anulează"
     },
     en: {
       title: "Horror Bingo",
@@ -107,7 +185,20 @@ const HorrorBingo = () => {
       sharedCard: "Shared Card",
       createNew: "Create New Card",
       cursedDollOption: "Include cursed doll elements",
-      selectMultiple: "Select multiple themes for variety"
+      jumpscareOption: "Include classic jump scares",
+      gothicOption: "Include gothic elements",
+      cultOption: "Include cults & rituals",
+      zombieOption: "Include zombie elements",
+      selectMultiple: "Select multiple themes for variety",
+      optionalThemes: "Optional Themes",
+      customThemes: "Custom Themes",
+      createCustomTheme: "Create New Theme",
+      themeName: "Theme name",
+      themeIdeas: "Theme ideas",
+      addIdea: "Add Idea",
+      removeIdea: "Remove Idea",
+      saveTheme: "Save Theme",
+      cancelTheme: "Cancel"
     }
   };
 
@@ -167,18 +258,45 @@ const HorrorBingo = () => {
   const generateBingoCard = () => {
     let allIdeas: BingoIdea[] = [];
     
-    // Collect ideas from selected themes
+    // Collect ideas from selected main themes
     selectedThemes.forEach(themeKey => {
       const theme = bingoThemes[themeKey];
       if (theme) {
         allIdeas = [...allIdeas, ...theme.ideas];
       }
     });
+
+    // Collect ideas from custom themes
+    customThemes.forEach(customTheme => {
+      if (selectedThemes.includes(customTheme.id)) {
+        allIdeas = [...allIdeas, ...customTheme.ideas];
+      }
+    });
     
-    // Add cursed doll ideas if option is selected (only a few, not overwhelming)
-    if (includeCursedDoll && bingoThemes.cursedDoll) {
-      const dollIdeas = bingoThemes.cursedDoll.ideas.slice(0, 3); // Only take first 3 doll ideas
+    // Add optional theme ideas if selected (3-6 ideas each)
+    if (includeCursedDoll && optionalThemes.cursedDoll) {
+      const dollIdeas = optionalThemes.cursedDoll.ideas.slice(0, 3);
       allIdeas = [...allIdeas, ...dollIdeas];
+    }
+    
+    if (includeJumpscare && optionalThemes.jumpscare) {
+      const jumpscareIdeas = optionalThemes.jumpscare.ideas.slice(0, 4);
+      allIdeas = [...allIdeas, ...jumpscareIdeas];
+    }
+    
+    if (includeGothic && optionalThemes.gothic) {
+      const gothicIdeas = optionalThemes.gothic.ideas.slice(0, 5);
+      allIdeas = [...allIdeas, ...gothicIdeas];
+    }
+    
+    if (includeCult && optionalThemes.cult) {
+      const cultIdeas = optionalThemes.cult.ideas.slice(0, 4);
+      allIdeas = [...allIdeas, ...cultIdeas];
+    }
+    
+    if (includeZombie && optionalThemes.zombie) {
+      const zombieIdeas = optionalThemes.zombie.ideas.slice(0, 5);
+      allIdeas = [...allIdeas, ...zombieIdeas];
     }
     
     // Remove duplicates
@@ -255,6 +373,88 @@ const HorrorBingo = () => {
         ? prev.filter(t => t !== themeKey)
         : [...prev, themeKey]
     );
+  };
+
+  const handleOptionalThemeChange = (themeName: string, checked: CheckedState) => {
+    const isChecked = checked === true;
+    switch (themeName) {
+      case 'cursedDoll':
+        setIncludeCursedDoll(isChecked);
+        break;
+      case 'jumpscare':
+        setIncludeJumpscare(isChecked);
+        break;
+      case 'gothic':
+        setIncludeGothic(isChecked);
+        break;
+      case 'cult':
+        setIncludeCult(isChecked);
+        break;
+      case 'zombie':
+        setIncludeZombie(isChecked);
+        break;
+    }
+  };
+
+  const addNewIdea = () => {
+    setNewThemeIdeas([...newThemeIdeas, { ro: '', en: '' }]);
+  };
+
+  const removeIdea = (index: number) => {
+    setNewThemeIdeas(newThemeIdeas.filter((_, i) => i !== index));
+  };
+
+  const updateIdeaText = (index: number, lang: 'ro' | 'en', text: string) => {
+    const updatedIdeas = [...newThemeIdeas];
+    updatedIdeas[index][lang] = text;
+    setNewThemeIdeas(updatedIdeas);
+  };
+
+  const saveCustomTheme = () => {
+    if (!newThemeName.ro || !newThemeName.en) {
+      toast({
+        title: "Eroare",
+        description: "Te rog completează numele temei în ambele limbi.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const validIdeas = newThemeIdeas.filter(idea => idea.ro && idea.en);
+    if (validIdeas.length === 0) {
+      toast({
+        title: "Eroare",
+        description: "Te rog adaugă cel puțin o idee validă.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newTheme: CustomTheme = {
+      id: `custom_${Date.now()}`,
+      name: newThemeName,
+      ideas: validIdeas
+    };
+
+    setCustomThemes([...customThemes, newTheme]);
+    setNewThemeName({ ro: '', en: '' });
+    setNewThemeIdeas([{ ro: '', en: '' }]);
+    setShowCustomThemeCreator(false);
+
+    toast({
+      title: "Temă salvată!",
+      description: `Tema "${newTheme.name[language]}" a fost adăugată cu succes.`,
+    });
+  };
+
+  const deleteCustomTheme = (themeId: string) => {
+    setCustomThemes(customThemes.filter(theme => theme.id !== themeId));
+    setSelectedThemes(selectedThemes.filter(id => id !== themeId));
+    
+    toast({
+      title: "Temă ștearsă",
+      description: "Tema personalizată a fost ștearsă.",
+    });
   };
 
   const toggleCell = (index: number) => {
@@ -372,7 +572,7 @@ const HorrorBingo = () => {
     if (bingoCard.length > 0 && !isSharedCard) {
       generateBingoCard();
     }
-  }, [language, selectedThemes, cardSize, difficulty, excludedIdeas, includeCursedDoll]);
+  }, [language, selectedThemes, cardSize, difficulty, excludedIdeas, includeCursedDoll, includeJumpscare, includeGothic, includeCult, includeZombie]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black text-white p-4">
@@ -587,48 +787,187 @@ const HorrorBingo = () => {
                 <p className="text-xs text-gray-400 mb-3">{t.selectMultiple}</p>
 
                 {showThemeSelector && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-gray-800/50 rounded-lg">
-                    {Object.entries(bingoThemes)
-                      .filter(([key]) => key !== 'cursedDoll') // Exclude cursed doll from main themes
-                      .map(([key, theme]) => (
-                      <div key={key} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={key}
-                          checked={selectedThemes.includes(key)}
-                          onCheckedChange={() => toggleTheme(key)}
-                          className="border-gray-600"
-                        />
-                        <label
-                          htmlFor={key}
-                          className="text-sm text-gray-200 cursor-pointer"
-                        >
-                          {theme.name[language]}
-                        </label>
+                  <div className="space-y-6">
+                    {/* Main Themes */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-gray-800/50 rounded-lg">
+                      {Object.entries(bingoThemes).map(([key, theme]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={key}
+                            checked={selectedThemes.includes(key)}
+                            onCheckedChange={() => toggleTheme(key)}
+                            className="border-gray-600"
+                          />
+                          <label
+                            htmlFor={key}
+                            className="text-sm text-gray-200 cursor-pointer"
+                          >
+                            {theme.name[language]}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Optional Themes */}
+                    <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+                      <h4 className="text-purple-300 font-medium mb-3">{t.optionalThemes}</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {Object.entries(optionalThemes).map(([key, theme]) => {
+                          const isChecked = key === 'cursedDoll' ? includeCursedDoll :
+                                           key === 'jumpscare' ? includeJumpscare :
+                                           key === 'gothic' ? includeGothic :
+                                           key === 'cult' ? includeCult :
+                                           key === 'zombie' ? includeZombie : false;
+                          
+                          return (
+                            <div key={key} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={key}
+                                checked={isChecked}
+                                onCheckedChange={(checked) => handleOptionalThemeChange(key, checked)}
+                                className="border-purple-500"
+                              />
+                              <label
+                                htmlFor={key}
+                                className="text-sm text-purple-300 cursor-pointer"
+                              >
+                                {theme.name[language]} ({theme.ideas.length} idei)
+                              </label>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Custom Themes */}
+                    <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-blue-300 font-medium">{t.customThemes}</h4>
+                        <Button
+                          onClick={() => setShowCustomThemeCreator(!showCustomThemeCreator)}
+                          variant="outline"
+                          size="sm"
+                          className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          {t.createCustomTheme}
+                        </Button>
+                      </div>
+
+                      {/* Custom Theme Creator */}
+                      {showCustomThemeCreator && (
+                        <div className="mb-4 p-3 bg-blue-800/20 rounded border border-blue-600/30">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <Input
+                              placeholder="Nume temă (română)"
+                              value={newThemeName.ro}
+                              onChange={(e) => setNewThemeName({...newThemeName, ro: e.target.value})}
+                              className="bg-gray-800 border-blue-600"
+                            />
+                            <Input
+                              placeholder="Theme name (English)"
+                              value={newThemeName.en}
+                              onChange={(e) => setNewThemeName({...newThemeName, en: e.target.value})}
+                              className="bg-gray-800 border-blue-600"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2 mb-3">
+                            {newThemeIdeas.map((idea, index) => (
+                              <div key={index} className="flex gap-2 items-center">
+                                <Input
+                                  placeholder="Idee română"
+                                  value={idea.ro}
+                                  onChange={(e) => updateIdeaText(index, 'ro', e.target.value)}
+                                  className="bg-gray-800 border-blue-600 flex-1"
+                                />
+                                <Input
+                                  placeholder="English idea"
+                                  value={idea.en}
+                                  onChange={(e) => updateIdeaText(index, 'en', e.target.value)}
+                                  className="bg-gray-800 border-blue-600 flex-1"
+                                />
+                                {newThemeIdeas.length > 1 && (
+                                  <Button
+                                    onClick={() => removeIdea(index)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={addNewIdea}
+                              variant="outline"
+                              size="sm"
+                              className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+                            >
+                              <Plus className="w-4 h-4 mr-1" />
+                              {t.addIdea}
+                            </Button>
+                            <Button
+                              onClick={saveCustomTheme}
+                              size="sm"
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              {t.saveTheme}
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setShowCustomThemeCreator(false);
+                                setNewThemeName({ ro: '', en: '' });
+                                setNewThemeIdeas([{ ro: '', en: '' }]);
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white"
+                            >
+                              {t.cancelTheme}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Existing Custom Themes */}
+                      {customThemes.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {customThemes.map((theme) => (
+                            <div key={theme.id} className="flex items-center justify-between space-x-2">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={theme.id}
+                                  checked={selectedThemes.includes(theme.id)}
+                                  onCheckedChange={() => toggleTheme(theme.id)}
+                                  className="border-blue-500"
+                                />
+                                <label
+                                  htmlFor={theme.id}
+                                  className="text-sm text-blue-300 cursor-pointer"
+                                >
+                                  {theme.name[language]} ({theme.ideas.length} idei)
+                                </label>
+                              </div>
+                              <Button
+                                onClick={() => deleteCustomTheme(theme.id)}
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-400 hover:text-red-300 h-6 w-6 p-0"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
-
-                {/* Cursed Doll Option */}
-                <div className="mt-4 p-3 bg-purple-900/20 border border-purple-500/30 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="cursedDoll"
-                      checked={includeCursedDoll}
-                      onCheckedChange={setIncludeCursedDoll}
-                      className="border-purple-500"
-                    />
-                    <label
-                      htmlFor="cursedDoll"
-                      className="text-sm text-purple-300 cursor-pointer"
-                    >
-                      {t.cursedDollOption}
-                    </label>
-                  </div>
-                  <p className="text-xs text-purple-400 mt-1 ml-6">
-                    Adaugă câteva idei specifice despre păpuși blestemate fără să domine cardul
-                  </p>
-                </div>
               </div>
 
               <div className="flex gap-4 mt-6 flex-wrap">
