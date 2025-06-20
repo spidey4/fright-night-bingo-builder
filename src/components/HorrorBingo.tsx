@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -258,16 +257,6 @@ const HorrorBingo = () => {
 
   const t = translations[language];
 
-  const movieThemes = [
-    { value: 'slasher', label: { en: 'Slasher', ro: 'Slasher' } },
-    { value: 'supernatural', label: { en: 'Supernatural', ro: 'Supranatural' } },
-    { value: 'zombie', label: { en: 'Zombie', ro: 'Zombie' } },
-    { value: 'psychological', label: { en: 'Psychological', ro: 'Psihologic' } },
-    { value: 'paranormal', label: { en: 'Paranormal', ro: 'Paranormal' } },
-    { value: 'possession', label: { en: 'Possession', ro: 'Posedare' } },
-    { value: 'hauntedHouse', label: { en: 'Haunted House', ro: 'Casa Bântuită' } }
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black p-4">
       <div className="max-w-6xl mx-auto">
@@ -348,11 +337,42 @@ const HorrorBingo = () => {
 
                 <Separator className="bg-gray-600" />
 
-                <ClicheExcluder exclusionCount={clicheExclusionCount} onExclusionCountChange={setClicheExclusionCount} language={language} />
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-300">
+                    {t.cliches}
+                  </label>
+                  <div className="text-gray-400 text-sm mb-2">
+                    {language === 'ro' 
+                      ? `Excluzând ${clicheExclusionCount} clichee` 
+                      : `Excluding ${clicheExclusionCount} clichés`
+                    }
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    value={clicheExclusionCount}
+                    onChange={(e) => setClicheExclusionCount(Number(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
 
                 <Separator className="bg-gray-600" />
 
-                <VSMode enabled={vsMode} onToggle={setVsMode} language={language} />
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-300">
+                    {t.vsMode}
+                  </label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setVsMode(!vsMode)}
+                    className={vsMode ? "bg-green-600 border-green-500 text-white" : "border-gray-600 text-gray-400"}
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    {vsMode ? t.disableVSMode : t.enableVSMode}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -372,33 +392,7 @@ const HorrorBingo = () => {
               </CardHeader>
               {showMovieSuggester && (
                 <CardContent className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">
-                      {t.movieThemes}
-                    </label>
-                    <Select
-                      value={selectedMovieThemes.length > 0 ? selectedMovieThemes[0] : ''}
-                      onValueChange={(value) => setSelectedMovieThemes([value])}
-                    >
-                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                        <SelectValue placeholder={t.selectMovieTheme} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-600">
-                        {movieThemes.map(theme => (
-                          <SelectItem key={theme.value} value={theme.value} className="text-white hover:bg-gray-700">
-                            {theme.label[language]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {selectedMovieThemes.length > 0 && (
-                    <MovieSuggester
-                      selectedTheme={selectedMovieThemes[0]}
-                      language={language}
-                    />
-                  )}
+                  <MovieSuggester language={language} />
                 </CardContent>
               )}
             </Card>
@@ -420,7 +414,15 @@ const HorrorBingo = () => {
                 </Button>
 
                 {showShare && shareURL && (
-                  <QRCodeShare url={shareURL} language={language} />
+                  <div className="p-4 bg-gray-800 rounded-lg">
+                    <p className="text-sm text-gray-300 mb-2">Share URL:</p>
+                    <input
+                      type="text"
+                      value={shareURL}
+                      readOnly
+                      className="w-full bg-gray-700 text-white p-2 rounded text-sm"
+                    />
+                  </div>
                 )}
               </CardContent>
             </Card>
