@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, QrCode } from 'lucide-react';
+import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, QrCode, ChevronDown, ChevronUp } from 'lucide-react';
 import { bingoThemes, BingoIdea } from '@/data/bingoData';
 import StardustLogo from '@/components/StardustLogo';
 import DifficultySlider from '@/components/DifficultySlider';
@@ -15,6 +15,7 @@ import QRCodeShare from '@/components/QRCodeShare';
 import { downloadBingoCard } from '@/utils/downloadCard';
 import { suggestRandomMovie } from '@/utils/movieSuggester';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 
 type Language = 'ro' | 'en';
 type CardSize = 3 | 4 | 5;
@@ -33,19 +34,13 @@ interface VSGameState {
   currentRound: number;
 }
 
-interface SharedCardData {
-  theme: string;
-  size: CardSize;
-  language: Language;
-  cards: string[];
-}
-
 const HorrorBingo = () => {
   const [language, setLanguage] = useState<Language>('ro');
-  const [selectedTheme, setSelectedTheme] = useState('slasher');
+  const [selectedThemes, setSelectedThemes] = useState<string[]>(['slasher']); // Changed to array
   const [cardSize, setCardSize] = useState<CardSize>(5);
   const [bingoCard, setBingoCard] = useState<BingoCell[]>([]);
   const [showSettings, setShowSettings] = useState(true);
+  const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [difficulty, setDifficulty] = useState(50);
   const [showClicheExcluder, setShowClicheExcluder] = useState(false);
   const [excludedIdeas, setExcludedIdeas] = useState<string[]>([]);
@@ -54,6 +49,7 @@ const HorrorBingo = () => {
   const [vsGameState, setVSGameState] = useState<VSGameState | null>(null);
   const [showQRCode, setShowQRCode] = useState(false);
   const [isSharedCard, setIsSharedCard] = useState(false);
+  const [includeCursedDoll, setIncludeCursedDoll] = useState(false); // New state for cursed doll
   const { toast } = useToast();
 
   const translations = {
@@ -61,13 +57,15 @@ const HorrorBingo = () => {
       title: "Horror Bingo",
       subtitle: "Jocul perfect pentru seara de filme horror!",
       language: "Limbă",
-      theme: "Tema filmului",
+      themes: "Teme filme",
       cardSize: "Mărimea cardului",
       generateCard: "Generează Card",
       resetCard: "Resetează Card",
       downloadCard: "Descarcă Card",
       settings: "Setări",
       hideSettings: "Ascunde Setări",
+      showThemes: "Arată Teme",
+      hideThemes: "Ascunde Teme",
       editCell: "Editează",
       saveCell: "Salvează",
       cancelEdit: "Anulează",
@@ -80,18 +78,22 @@ const HorrorBingo = () => {
       qrCode: "Cod QR",
       sharedCard: "Card Partajat",
       createNew: "Creează Card Nou",
+      cursedDollOption: "Include elemente păpușă blestemată",
+      selectMultiple: "Selectează mai multe teme pentru varietate"
     },
     en: {
       title: "Horror Bingo",
       subtitle: "The perfect game for horror movie nights!",
       language: "Language",
-      theme: "Movie theme",
+      themes: "Movie themes",
       cardSize: "Card size",
       generateCard: "Generate Card",
       resetCard: "Reset Card",
       downloadCard: "Download Card",
       settings: "Settings",
       hideSettings: "Hide Settings",
+      showThemes: "Show Themes",
+      hideThemes: "Hide Themes",
       editCell: "Edit",
       saveCell: "Save",
       cancelEdit: "Cancel",
@@ -104,6 +106,8 @@ const HorrorBingo = () => {
       qrCode: "QR Code",
       sharedCard: "Shared Card",
       createNew: "Create New Card",
+      cursedDollOption: "Include cursed doll elements",
+      selectMultiple: "Select multiple themes for variety"
     }
   };
 
@@ -112,26 +116,23 @@ const HorrorBingo = () => {
   // Load shared card from URL on component mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const cardData = urlParams.get('d') || urlParams.get('card'); // Support both old and new format
+    const cardData = urlParams.get('d') || urlParams.get('card');
     
     if (cardData) {
       try {
         const decodedData = decodeURIComponent(cardData);
         const parsedData = JSON.parse(decodedData);
         
-        // Handle both old and new format
-        const theme = parsedData.t || parsedData.theme;
+        const themes = parsedData.t || parsedData.themes || [parsedData.theme || 'slasher'];
         const size = parsedData.s || parsedData.size;
         const lang = parsedData.l || parsedData.language;
         const cards = parsedData.c || parsedData.cards;
         
-        // Set the shared card data
         setLanguage(lang);
-        setSelectedTheme(theme);
+        setSelectedThemes(Array.isArray(themes) ? themes : [themes]);
         setCardSize(size);
         setIsSharedCard(true);
         
-        // Create bingo cells from shared card data
         const sharedCells: BingoCell[] = cards.map((cardText: string) => ({
           idea: {
             ro: lang === 'ro' ? cardText : cardText,
@@ -164,29 +165,65 @@ const HorrorBingo = () => {
   }, []);
 
   const generateBingoCard = () => {
-    const theme = bingoThemes[selectedTheme];
-    let ideas = [...theme.ideas];
+    let allIdeas: BingoIdea[] = [];
+    
+    // Collect ideas from selected themes
+    selectedThemes.forEach(themeKey => {
+      const theme = bingoThemes[themeKey];
+      if (theme) {
+        allIdeas = [...allIdeas, ...theme.ideas];
+      }
+    });
+    
+    // Add cursed doll ideas if option is selected (only a few, not overwhelming)
+    if (includeCursedDoll && bingoThemes.cursedDoll) {
+      const dollIdeas = bingoThemes.cursedDoll.ideas.slice(0, 3); // Only take first 3 doll ideas
+      allIdeas = [...allIdeas, ...dollIdeas];
+    }
+    
+    // Remove duplicates
+    const uniqueIdeas = allIdeas.filter((idea, index, self) => 
+      index === self.findIndex(i => i[language] === idea[language])
+    );
     
     // Filter out excluded ideas
-    ideas = ideas.filter(idea => !excludedIdeas.includes(idea[language]));
+    let filteredIdeas = uniqueIdeas.filter(idea => !excludedIdeas.includes(idea[language]));
     
-    // Apply difficulty filter
-    if (difficulty < 30) {
-      // Common clichés - take first portion
-      ideas = ideas.slice(0, Math.ceil(ideas.length * 0.6));
-    } else if (difficulty > 70) {
-      // Rare clichés - take last portion
-      ideas = ideas.slice(Math.floor(ideas.length * 0.4));
+    // Improve difficulty logic - sort by complexity/rarity
+    const sortedIdeas = [...filteredIdeas].sort((a, b) => {
+      const aText = a[language].toLowerCase();
+      const bText = b[language].toLowerCase();
+      
+      // Simple heuristic: longer text or specific words indicate higher difficulty
+      const aComplexity = aText.length + (aText.includes('specific') ? 10 : 0) + (aText.includes('exact') ? 10 : 0);
+      const bComplexity = bText.length + (bText.includes('specific') ? 10 : 0) + (bText.includes('exact') ? 10 : 0);
+      
+      return aComplexity - bComplexity;
+    });
+    
+    // Apply difficulty filter with improved logic
+    let selectedPool: BingoIdea[] = [];
+    if (difficulty <= 25) {
+      // Easy - most common clichés
+      selectedPool = sortedIdeas.slice(0, Math.ceil(sortedIdeas.length * 0.4));
+    } else if (difficulty <= 50) {
+      // Medium - mix of common and moderate
+      selectedPool = sortedIdeas.slice(0, Math.ceil(sortedIdeas.length * 0.7));
+    } else if (difficulty <= 75) {
+      // Hard - moderate to rare
+      selectedPool = sortedIdeas.slice(Math.floor(sortedIdeas.length * 0.3));
+    } else {
+      // Expert - only the rarest/most specific
+      selectedPool = sortedIdeas.slice(Math.floor(sortedIdeas.length * 0.6));
     }
     
     const cardCells = cardSize * cardSize;
     const selectedIdeas: BingoIdea[] = [];
 
     // Shuffle and select ideas
-    for (let i = 0; i < cardCells && ideas.length > 0; i++) {
-      const randomIndex = Math.floor(Math.random() * ideas.length);
-      selectedIdeas.push(ideas[randomIndex]);
-      ideas.splice(randomIndex, 1);
+    const shuffledPool = [...selectedPool].sort(() => Math.random() - 0.5);
+    for (let i = 0; i < cardCells && i < shuffledPool.length; i++) {
+      selectedIdeas.push(shuffledPool[i]);
     }
 
     // Fill remaining cells if needed
@@ -210,6 +247,14 @@ const HorrorBingo = () => {
     if (window.location.search) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+  };
+
+  const toggleTheme = (themeKey: string) => {
+    setSelectedThemes(prev => 
+      prev.includes(themeKey) 
+        ? prev.filter(t => t !== themeKey)
+        : [...prev, themeKey]
+    );
   };
 
   const toggleCell = (index: number) => {
@@ -266,7 +311,8 @@ const HorrorBingo = () => {
   };
 
   const handleMovieSuggestion = (platforms: string[]) => {
-    const movie = suggestRandomMovie(selectedTheme, platforms);
+    const randomTheme = selectedThemes[Math.floor(Math.random() * selectedThemes.length)];
+    const movie = suggestRandomMovie(randomTheme, platforms);
     if (movie) {
       toast({
         title: t.suggestedMovie,
@@ -316,7 +362,6 @@ const HorrorBingo = () => {
       description: `Runda ${vsGameState.currentRound} câștigată!`,
     });
     
-    // Generate new card for next round
     setTimeout(() => {
       generateBingoCard();
       resetCard();
@@ -327,7 +372,7 @@ const HorrorBingo = () => {
     if (bingoCard.length > 0 && !isSharedCard) {
       generateBingoCard();
     }
-  }, [language, selectedTheme, cardSize, difficulty, excludedIdeas]);
+  }, [language, selectedThemes, cardSize, difficulty, excludedIdeas, includeCursedDoll]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black text-white p-4">
@@ -416,7 +461,7 @@ const HorrorBingo = () => {
         <div className="grid gap-6 mb-8">
           {showClicheExcluder && (
             <ClicheExcluder
-              allIdeas={bingoThemes[selectedTheme].ideas}
+              allIdeas={selectedThemes.flatMap(theme => bingoThemes[theme]?.ideas || [])}
               excludedIdeas={excludedIdeas}
               onToggleExclude={toggleExcludedIdea}
               onClose={() => setShowClicheExcluder(false)}
@@ -426,7 +471,7 @@ const HorrorBingo = () => {
           
           {showMovieSuggester && (
             <MovieSuggester
-              selectedTheme={selectedTheme}
+              selectedTheme={selectedThemes[0] || 'slasher'}
               language={language}
               onSuggestMovie={handleMovieSuggestion}
             />
@@ -445,7 +490,7 @@ const HorrorBingo = () => {
             <QRCodeShare
               bingoCard={bingoCard}
               language={language}
-              selectedTheme={selectedTheme}
+              selectedTheme={selectedThemes[0] || 'slasher'}
               cardSize={cardSize}
               onClose={() => setShowQRCode(false)}
             />
@@ -462,7 +507,7 @@ const HorrorBingo = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-300">
                     {t.language}
@@ -474,24 +519,6 @@ const HorrorBingo = () => {
                     <SelectContent className="bg-gray-800 border-gray-600">
                       <SelectItem value="ro">Română</SelectItem>
                       <SelectItem value="en">English</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-300">
-                    {t.theme}
-                  </label>
-                  <Select value={selectedTheme} onValueChange={setSelectedTheme}>
-                    <SelectTrigger className="bg-gray-800/80 border-gray-600 text-white hover:border-red-500/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-600">
-                      {Object.entries(bingoThemes).map(([key, theme]) => (
-                        <SelectItem key={key} value={key}>
-                          {theme.name[language]}
-                        </SelectItem>
-                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -521,10 +548,94 @@ const HorrorBingo = () => {
                 </div>
               </div>
 
+              {/* Theme Selection */}
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-300">
+                    {t.themes}
+                  </label>
+                  <Button
+                    onClick={() => setShowThemeSelector(!showThemeSelector)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-400 hover:text-white"
+                  >
+                    {showThemeSelector ? (
+                      <>
+                        <ChevronUp className="w-4 h-4 mr-1" />
+                        {t.hideThemes}
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-4 h-4 mr-1" />
+                        {t.showThemes}
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                {selectedThemes.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {selectedThemes.map(themeKey => (
+                      <Badge key={themeKey} variant="outline" className="border-red-500/30 text-red-400">
+                        {bingoThemes[themeKey]?.name[language] || themeKey}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                
+                <p className="text-xs text-gray-400 mb-3">{t.selectMultiple}</p>
+
+                {showThemeSelector && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-gray-800/50 rounded-lg">
+                    {Object.entries(bingoThemes)
+                      .filter(([key]) => key !== 'cursedDoll') // Exclude cursed doll from main themes
+                      .map(([key, theme]) => (
+                      <div key={key} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={key}
+                          checked={selectedThemes.includes(key)}
+                          onCheckedChange={() => toggleTheme(key)}
+                          className="border-gray-600"
+                        />
+                        <label
+                          htmlFor={key}
+                          className="text-sm text-gray-200 cursor-pointer"
+                        >
+                          {theme.name[language]}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Cursed Doll Option */}
+                <div className="mt-4 p-3 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="cursedDoll"
+                      checked={includeCursedDoll}
+                      onCheckedChange={setIncludeCursedDoll}
+                      className="border-purple-500"
+                    />
+                    <label
+                      htmlFor="cursedDoll"
+                      className="text-sm text-purple-300 cursor-pointer"
+                    >
+                      {t.cursedDollOption}
+                    </label>
+                  </div>
+                  <p className="text-xs text-purple-400 mt-1 ml-6">
+                    Adaugă câteva idei specifice despre păpuși blestemate fără să domine cardul
+                  </p>
+                </div>
+              </div>
+
               <div className="flex gap-4 mt-6 flex-wrap">
                 <Button 
                   onClick={generateBingoCard}
                   className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/30"
+                  disabled={selectedThemes.length === 0}
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   {t.generateCard}
