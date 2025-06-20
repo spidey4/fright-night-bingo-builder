@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -277,7 +278,7 @@ const HorrorBingo = () => {
               {t.title}
             </CardTitle>
             <div className="flex items-center space-x-2">
-              <Select value={language} onValueChange={setLanguage}>
+              <Select value={language} onValueChange={(value: 'ro' | 'en') => setLanguage(value)}>
                 <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                   <Globe className="w-4 h-4 mr-2" />
                   <SelectValue placeholder={t.language} />
@@ -297,7 +298,7 @@ const HorrorBingo = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <Card className="bg-gray-900/70 border-red-600/40 backdrop-blur-sm">
+            <Card className="bg-gray-900/70 border-red-600/40 backdrop-blur-sm" id="bingo-card">
               <CardHeader>
                 <CardTitle className="text-red-400">
                   {vsMode ? "💀 VS Mode 💀" : t.generate}
@@ -343,15 +344,15 @@ const HorrorBingo = () => {
 
                 <Separator className="bg-gray-600" />
 
-                <DifficultySlider difficulty={difficulty} setDifficulty={setDifficulty} language={language} />
+                <DifficultySlider difficulty={difficulty} onDifficultyChange={setDifficulty} language={language} />
 
                 <Separator className="bg-gray-600" />
 
-                <ClicheExcluder clicheExclusionCount={clicheExclusionCount} setClicheExclusionCount={setClicheExclusionCount} language={language} />
+                <ClicheExcluder exclusionCount={clicheExclusionCount} onExclusionCountChange={setClicheExclusionCount} language={language} />
 
                 <Separator className="bg-gray-600" />
 
-                <VSMode vsMode={vsMode} setVsMode={setVsMode} language={language} />
+                <VSMode enabled={vsMode} onToggle={setVsMode} language={language} />
               </CardContent>
             </Card>
 
@@ -419,7 +420,7 @@ const HorrorBingo = () => {
                 </Button>
 
                 {showShare && shareURL && (
-                  <QRCodeShare shareURL={shareURL} language={language} />
+                  <QRCodeShare url={shareURL} language={language} />
                 )}
               </CardContent>
             </Card>
