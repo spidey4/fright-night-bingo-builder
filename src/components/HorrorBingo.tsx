@@ -392,7 +392,7 @@ const HorrorBingo = () => {
               </CardHeader>
               {showMovieSuggester && (
                 <CardContent className="space-y-4">
-                  <MovieSuggester language={language} />
+                  <MovieSuggester selectedTheme="horror" language={language} />
                 </CardContent>
               )}
             </Card>
