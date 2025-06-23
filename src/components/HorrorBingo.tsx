@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, QrCode, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, QrCode, ChevronDown, ChevronUp, Plus, Trash2, Upload } from 'lucide-react';
 import { bingoThemes, BingoIdea } from '@/data/bingoData';
 import StardustLogo from '@/components/StardustLogo';
 import DifficultySlider from '@/components/DifficultySlider';
@@ -12,6 +12,7 @@ import ClicheExcluder from '@/components/ClicheExcluder';
 import MovieSuggester from '@/components/MovieSuggester';
 import VSMode from '@/components/VSMode';
 import QRCodeShare from '@/components/QRCodeShare';
+import IdeaImporter from '@/components/IdeaImporter';
 import { downloadBingoCard } from '@/utils/downloadCard';
 import { suggestRandomMovie } from '@/utils/movieSuggester';
 import { useToast } from '@/hooks/use-toast';
@@ -65,6 +66,8 @@ const HorrorBingo = () => {
   const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
   const [newThemeName, setNewThemeName] = useState({ ro: '', en: '' });
   const [newThemeIdeas, setNewThemeIdeas] = useState<{ ro: string; en: string }[]>([{ ro: '', en: '' }]);
+  const [showIdeaImporter, setShowIdeaImporter] = useState(false);
+  const [importedIdeas, setImportedIdeas] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Additional optional themes
@@ -157,7 +160,9 @@ const HorrorBingo = () => {
       addIdea: "Adaugă Idee",
       removeIdea: "Șterge Idee",
       saveTheme: "Salvează Tema",
-      cancelTheme: "Anulează"
+      cancelTheme: "Anulează",
+      importIdeas: "Importă Idei",
+      useImportedIdeas: "Folosește idei importate pentru card"
     },
     en: {
       title: "Horror Bingo",
@@ -198,7 +203,9 @@ const HorrorBingo = () => {
       addIdea: "Add Idea",
       removeIdea: "Remove Idea",
       saveTheme: "Save Theme",
-      cancelTheme: "Cancel"
+      cancelTheme: "Cancel",
+      importIdeas: "Import Ideas",
+      useImportedIdeas: "Use imported ideas for card"
     }
   };
 
@@ -258,45 +265,54 @@ const HorrorBingo = () => {
   const generateBingoCard = () => {
     let allIdeas: BingoIdea[] = [];
     
-    // Collect ideas from selected main themes
-    selectedThemes.forEach(themeKey => {
-      const theme = bingoThemes[themeKey];
-      if (theme) {
-        allIdeas = [...allIdeas, ...theme.ideas];
-      }
-    });
+    // Check if we should use imported ideas
+    if (importedIdeas.length > 0) {
+      const importedBingoIdeas: BingoIdea[] = importedIdeas.map(idea => ({
+        ro: idea,
+        en: idea
+      }));
+      allIdeas = importedBingoIdeas;
+    } else {
+      // Collect ideas from selected main themes
+      selectedThemes.forEach(themeKey => {
+        const theme = bingoThemes[themeKey];
+        if (theme) {
+          allIdeas = [...allIdeas, ...theme.ideas];
+        }
+      });
 
-    // Collect ideas from custom themes
-    customThemes.forEach(customTheme => {
-      if (selectedThemes.includes(customTheme.id)) {
-        allIdeas = [...allIdeas, ...customTheme.ideas];
+      // Collect ideas from custom themes
+      customThemes.forEach(customTheme => {
+        if (selectedThemes.includes(customTheme.id)) {
+          allIdeas = [...allIdeas, ...customTheme.ideas];
+        }
+      });
+      
+      // Add optional theme ideas if selected (3-6 ideas each)
+      if (includeCursedDoll && optionalThemes.cursedDoll) {
+        const dollIdeas = optionalThemes.cursedDoll.ideas.slice(0, 3);
+        allIdeas = [...allIdeas, ...dollIdeas];
       }
-    });
-    
-    // Add optional theme ideas if selected (3-6 ideas each)
-    if (includeCursedDoll && optionalThemes.cursedDoll) {
-      const dollIdeas = optionalThemes.cursedDoll.ideas.slice(0, 3);
-      allIdeas = [...allIdeas, ...dollIdeas];
-    }
-    
-    if (includeJumpscare && optionalThemes.jumpscare) {
-      const jumpscareIdeas = optionalThemes.jumpscare.ideas.slice(0, 4);
-      allIdeas = [...allIdeas, ...jumpscareIdeas];
-    }
-    
-    if (includeGothic && optionalThemes.gothic) {
-      const gothicIdeas = optionalThemes.gothic.ideas.slice(0, 5);
-      allIdeas = [...allIdeas, ...gothicIdeas];
-    }
-    
-    if (includeCult && optionalThemes.cult) {
-      const cultIdeas = optionalThemes.cult.ideas.slice(0, 4);
-      allIdeas = [...allIdeas, ...cultIdeas];
-    }
-    
-    if (includeZombie && optionalThemes.zombie) {
-      const zombieIdeas = optionalThemes.zombie.ideas.slice(0, 5);
-      allIdeas = [...allIdeas, ...zombieIdeas];
+      
+      if (includeJumpscare && optionalThemes.jumpscare) {
+        const jumpscareIdeas = optionalThemes.jumpscare.ideas.slice(0, 4);
+        allIdeas = [...allIdeas, ...jumpscareIdeas];
+      }
+      
+      if (includeGothic && optionalThemes.gothic) {
+        const gothicIdeas = optionalThemes.gothic.ideas.slice(0, 5);
+        allIdeas = [...allIdeas, ...gothicIdeas];
+      }
+      
+      if (includeCult && optionalThemes.cult) {
+        const cultIdeas = optionalThemes.cult.ideas.slice(0, 4);
+        allIdeas = [...allIdeas, ...cultIdeas];
+      }
+      
+      if (includeZombie && optionalThemes.zombie) {
+        const zombieIdeas = optionalThemes.zombie.ideas.slice(0, 5);
+        allIdeas = [...allIdeas, ...zombieIdeas];
+      }
     }
     
     // Remove duplicates
@@ -568,11 +584,29 @@ const HorrorBingo = () => {
     }, 2000);
   };
 
+  const handleImportIdeas = (ideas: string[]) => {
+    setImportedIdeas(ideas);
+    setSelectedThemes([]); // Clear selected themes when using imported ideas
+    toast({
+      title: "Idei importate!",
+      description: `${ideas.length} idei au fost încărcate cu succes.`,
+    });
+  };
+
+  const clearImportedIdeas = () => {
+    setImportedIdeas([]);
+    setSelectedThemes(['slasher']); // Reset to default theme
+    toast({
+      title: "Idei șterse",
+      description: "Ideile importate au fost șterse. Revenit la temele standard.",
+    });
+  };
+
   useEffect(() => {
     if (bingoCard.length > 0 && !isSharedCard) {
       generateBingoCard();
     }
-  }, [language, selectedThemes, cardSize, difficulty, excludedIdeas, includeCursedDoll, includeJumpscare, includeGothic, includeCult, includeZombie]);
+  }, [language, selectedThemes, cardSize, difficulty, excludedIdeas, includeCursedDoll, includeJumpscare, includeGothic, includeCult, includeZombie, importedIdeas]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black text-white p-4">
@@ -607,6 +641,25 @@ const HorrorBingo = () => {
             </div>
           )}
           
+          {/* Imported Ideas Status */}
+          {importedIdeas.length > 0 && (
+            <div className="mb-4">
+              <Badge variant="outline" className="border-blue-500/30 text-blue-400 mb-2">
+                {importedIdeas.length} idei importate
+              </Badge>
+              <div>
+                <Button
+                  onClick={clearImportedIdeas}
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white"
+                >
+                  Șterge idei importate
+                </Button>
+              </div>
+            </div>
+          )}
+          
           <div className="flex gap-2 justify-center flex-wrap mb-6">
             <Button
               onClick={() => setShowSettings(!showSettings)}
@@ -615,6 +668,15 @@ const HorrorBingo = () => {
             >
               <Settings className="w-4 h-4 mr-2" />
               {showSettings ? t.hideSettings : t.settings}
+            </Button>
+            
+            <Button
+              onClick={() => setShowIdeaImporter(!showIdeaImporter)}
+              variant="outline"
+              className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {t.importIdeas}
             </Button>
             
             <Button
@@ -659,6 +721,14 @@ const HorrorBingo = () => {
 
         {/* Feature Panels */}
         <div className="grid gap-6 mb-8">
+          {showIdeaImporter && (
+            <IdeaImporter
+              language={language}
+              onImportIdeas={handleImportIdeas}
+              onClose={() => setShowIdeaImporter(false)}
+            />
+          )}
+          
           {showClicheExcluder && (
             <ClicheExcluder
               allIdeas={selectedThemes.flatMap(theme => bingoThemes[theme]?.ideas || [])}
@@ -690,7 +760,7 @@ const HorrorBingo = () => {
             <QRCodeShare
               bingoCard={bingoCard}
               language={language}
-              selectedTheme={selectedThemes[0] || 'slasher'}
+              selectedThemes={selectedThemes}
               cardSize={cardSize}
               onClose={() => setShowQRCode(false)}
             />
@@ -748,346 +818,348 @@ const HorrorBingo = () => {
                 </div>
               </div>
 
-              {/* Theme Selection */}
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-300">
-                    {t.themes}
-                  </label>
-                  <Button
-                    onClick={() => setShowThemeSelector(!showThemeSelector)}
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-400 hover:text-white"
-                  >
-                    {showThemeSelector ? (
-                      <>
-                        <ChevronUp className="w-4 h-4 mr-1" />
-                        {t.hideThemes}
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-4 h-4 mr-1" />
-                        {t.showThemes}
-                      </>
-                    )}
-                  </Button>
-                </div>
-                
-                {selectedThemes.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {selectedThemes.map(themeKey => (
-                      <Badge key={themeKey} variant="outline" className="border-red-500/30 text-red-400">
-                        {bingoThemes[themeKey]?.name[language] || themeKey}
-                      </Badge>
-                    ))}
+              {/* Theme Selection - hide when using imported ideas */}
+              {importedIdeas.length === 0 && (
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-300">
+                      {t.themes}
+                    </label>
+                    <Button
+                      onClick={() => setShowThemeSelector(!showThemeSelector)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-gray-400 hover:text-white"
+                    >
+                      {showThemeSelector ? (
+                        <>
+                          <ChevronUp className="w-4 h-4 mr-1" />
+                          {t.hideThemes}
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-4 h-4 mr-1" />
+                          {t.showThemes}
+                        </>
+                      )}
+                    </Button>
                   </div>
-                )}
-                
-                <p className="text-xs text-gray-400 mb-3">{t.selectMultiple}</p>
-
-                {showThemeSelector && (
-                  <div className="space-y-6">
-                    {/* Main Themes */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-gray-800/50 rounded-lg">
-                      {Object.entries(bingoThemes).map(([key, theme]) => (
-                        <div key={key} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={key}
-                            checked={selectedThemes.includes(key)}
-                            onCheckedChange={() => toggleTheme(key)}
-                            className="border-gray-600"
-                          />
-                          <label
-                            htmlFor={key}
-                            className="text-sm text-gray-200 cursor-pointer"
-                          >
-                            {theme.name[language]}
-                          </label>
-                        </div>
+                  
+                  {selectedThemes.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {selectedThemes.map(themeKey => (
+                        <Badge key={themeKey} variant="outline" className="border-red-500/30 text-red-400">
+                          {bingoThemes[themeKey]?.name[language] || themeKey}
+                        </Badge>
                       ))}
                     </div>
+                  )}
+                  
+                  <p className="text-xs text-gray-400 mb-3">{t.selectMultiple}</p>
 
-                    {/* Optional Themes */}
-                    <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
-                      <h4 className="text-purple-300 font-medium mb-3">{t.optionalThemes}</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {Object.entries(optionalThemes).map(([key, theme]) => {
-                          const isChecked = key === 'cursedDoll' ? includeCursedDoll :
+                  {showThemeSelector && (
+                    <div className="space-y-6">
+                      {/* Main Themes */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-gray-800/50 rounded-lg">
+                        {Object.entries(bingoThemes).map(([key, theme]) => (
+                          <div key={key} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={key}
+                              checked={selectedThemes.includes(key)}
+                              onCheckedChange={() => toggleTheme(key)}
+                              className="border-gray-600"
+                            />
+                            <label
+                              htmlFor={key}
+                              className="text-sm text-gray-200 cursor-pointer"
+                            >
+                              {theme.name[language]}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Optional Themes */}
+                      <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+                        <h4 className="text-purple-300 font-medium mb-3">{t.optionalThemes}</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {Object.entries(optionalThemes).map(([key, theme]) => {
+                            const isChecked = key === 'cursedDoll' ? includeCursedDoll :
                                            key === 'jumpscare' ? includeJumpscare :
                                            key === 'gothic' ? includeGothic :
                                            key === 'cult' ? includeCult :
                                            key === 'zombie' ? includeZombie : false;
-                          
-                          return (
-                            <div key={key} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={key}
-                                checked={isChecked}
-                                onCheckedChange={(checked) => handleOptionalThemeChange(key, checked)}
-                                className="border-purple-500"
-                              />
-                              <label
-                                htmlFor={key}
-                                className="text-sm text-purple-300 cursor-pointer"
-                              >
-                                {theme.name[language]} ({theme.ideas.length} idei)
-                              </label>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Custom Themes */}
-                    <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-blue-300 font-medium">{t.customThemes}</h4>
-                        <Button
-                          onClick={() => setShowCustomThemeCreator(!showCustomThemeCreator)}
-                          variant="outline"
-                          size="sm"
-                          className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          {t.createCustomTheme}
-                        </Button>
-                      </div>
-
-                      {/* Custom Theme Creator */}
-                      {showCustomThemeCreator && (
-                        <div className="mb-4 p-3 bg-blue-800/20 rounded border border-blue-600/30">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                            <Input
-                              placeholder="Nume temă (română)"
-                              value={newThemeName.ro}
-                              onChange={(e) => setNewThemeName({...newThemeName, ro: e.target.value})}
-                              className="bg-gray-800 border-blue-600"
-                            />
-                            <Input
-                              placeholder="Theme name (English)"
-                              value={newThemeName.en}
-                              onChange={(e) => setNewThemeName({...newThemeName, en: e.target.value})}
-                              className="bg-gray-800 border-blue-600"
-                            />
-                          </div>
-                          
-                          <div className="space-y-2 mb-3">
-                            {newThemeIdeas.map((idea, index) => (
-                              <div key={index} className="flex gap-2 items-center">
-                                <Input
-                                  placeholder="Idee română"
-                                  value={idea.ro}
-                                  onChange={(e) => updateIdeaText(index, 'ro', e.target.value)}
-                                  className="bg-gray-800 border-blue-600 flex-1"
-                                />
-                                <Input
-                                  placeholder="English idea"
-                                  value={idea.en}
-                                  onChange={(e) => updateIdeaText(index, 'en', e.target.value)}
-                                  className="bg-gray-800 border-blue-600 flex-1"
-                                />
-                                {newThemeIdeas.length > 1 && (
-                                  <Button
-                                    onClick={() => removeIdea(index)}
-                                    variant="outline"
-                                    size="sm"
-                                    className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={addNewIdea}
-                              variant="outline"
-                              size="sm"
-                              className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
-                            >
-                              <Plus className="w-4 h-4 mr-1" />
-                              {t.addIdea}
-                            </Button>
-                            <Button
-                              onClick={saveCustomTheme}
-                              size="sm"
-                              className="bg-blue-600 hover:bg-blue-700"
-                            >
-                              {t.saveTheme}
-                            </Button>
-                            <Button
-                              onClick={() => {
-                                setShowCustomThemeCreator(false);
-                                setNewThemeName({ ro: '', en: '' });
-                                setNewThemeIdeas([{ ro: '', en: '' }]);
-                              }}
-                              variant="outline"
-                              size="sm"
-                              className="border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white"
-                            >
-                              {t.cancelTheme}
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Existing Custom Themes */}
-                      {customThemes.length > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {customThemes.map((theme) => (
-                            <div key={theme.id} className="flex items-center justify-between space-x-2">
-                              <div className="flex items-center space-x-2">
+                            
+                            return (
+                              <div key={key} className="flex items-center space-x-2">
                                 <Checkbox
-                                  id={theme.id}
-                                  checked={selectedThemes.includes(theme.id)}
-                                  onCheckedChange={() => toggleTheme(theme.id)}
-                                  className="border-blue-500"
+                                  id={key}
+                                  checked={isChecked}
+                                  onCheckedChange={(checked) => handleOptionalThemeChange(key, checked)}
+                                  className="border-purple-500"
                                 />
                                 <label
-                                  htmlFor={theme.id}
-                                  className="text-sm text-blue-300 cursor-pointer"
+                                  htmlFor={key}
+                                  className="text-sm text-purple-300 cursor-pointer"
                                 >
                                   {theme.name[language]} ({theme.ideas.length} idei)
                                 </label>
                               </div>
-                              <Button
-                                onClick={() => deleteCustomTheme(theme.id)}
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-400 hover:text-red-300 h-6 w-6 p-0"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-4 mt-6 flex-wrap">
-                <Button 
-                  onClick={generateBingoCard}
-                  className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/30"
-                  disabled={selectedThemes.length === 0}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  {t.generateCard}
-                </Button>
-                <Button 
-                  onClick={resetCard}
-                  variant="outline"
-                  className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
-                >
-                  {t.resetCard}
-                </Button>
-                <Button 
-                  onClick={handleDownload}
-                  variant="outline"
-                  className="border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  {t.downloadCard}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Bingo Card */}
-        {bingoCard.length > 0 && (
-          <Card className="bg-gray-900/70 border-red-600/40 backdrop-blur-sm shadow-2xl shadow-red-900/30">
-            <CardContent className="p-6">
-              <div 
-                id="bingo-card"
-                className={`grid gap-3 mx-auto max-w-4xl`}
-                style={{ 
-                  gridTemplateColumns: `repeat(${cardSize}, 1fr)`,
-                  aspectRatio: '1'
-                }}
-              >
-                {bingoCard.map((cell, index) => (
-                  <div
-                    key={index}
-                    className={`
-                      relative group border-2 rounded-lg p-3 cursor-pointer transition-all duration-300
-                      ${cell.isChecked 
-                        ? 'bg-gradient-to-br from-red-600 to-red-700 border-red-400 shadow-lg shadow-red-500/30 transform scale-105' 
-                        : 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-600/50 hover:border-red-500/60 hover:bg-gradient-to-br hover:from-gray-700/80 hover:to-gray-800/80 hover:shadow-lg hover:shadow-red-900/20'
-                      }
-                      min-h-[80px] flex flex-col items-center justify-center text-center
-                      backdrop-blur-sm
-                    `}
-                    onClick={() => !cell.isEditing && toggleCell(index)}
-                  >
-                    {cell.isEditing ? (
-                      <div className="w-full space-y-2" onClick={(e) => e.stopPropagation()}>
-                        <Input
-                          value={cell.editedText}
-                          onChange={(e) => updateEditText(index, e.target.value)}
-                          className="text-xs bg-gray-900/80 border-gray-600 text-white"
-                          autoFocus
-                        />
-                        <div className="flex gap-1 justify-center">
-                          <Button
-                            size="sm"
-                            onClick={() => saveEdit(index)}
-                            className="bg-green-600 hover:bg-green-700 h-6 px-2"
-                          >
-                            <Save className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => cancelEdit(index)}
-                            className="border-gray-600 text-gray-400 hover:bg-gray-700 h-6 px-2"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
+                            );
+                          })}
                         </div>
                       </div>
-                    ) : (
-                      <>
-                        <span className={`text-xs font-medium leading-tight ${cell.isChecked ? 'text-white' : 'text-gray-200'}`}>
-                          {cell.idea[language]}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startEditing(index);
-                          }}
-                          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-gray-400 hover:text-white"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                        </Button>
-                        {cell.isChecked && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center animate-pulse">
-                              <span className="text-2xl">💀</span>
+
+                      {/* Custom Themes */}
+                      <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-blue-300 font-medium">{t.customThemes}</h4>
+                          <Button
+                            onClick={() => setShowCustomThemeCreator(!showCustomThemeCreator)}
+                            variant="outline"
+                            size="sm"
+                            className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            {t.createCustomTheme}
+                          </Button>
+                        </div>
+
+                        {/* Custom Theme Creator */}
+                        {showCustomThemeCreator && (
+                          <div className="mb-4 p-3 bg-blue-800/20 rounded border border-blue-600/30">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                              <Input
+                                placeholder="Nume temă (română)"
+                                value={newThemeName.ro}
+                                onChange={(e) => setNewThemeName({...newThemeName, ro: e.target.value})}
+                                className="bg-gray-800 border-blue-600"
+                              />
+                              <Input
+                                placeholder="Theme name (English)"
+                                value={newThemeName.en}
+                                onChange={(e) => setNewThemeName({...newThemeName, en: e.target.value})}
+                                className="bg-gray-800 border-blue-600"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2 mb-3">
+                              {newThemeIdeas.map((idea, index) => (
+                                <div key={index} className="flex gap-2 items-center">
+                                  <Input
+                                    placeholder="Idee română"
+                                    value={idea.ro}
+                                    onChange={(e) => updateIdeaText(index, 'ro', e.target.value)}
+                                    className="bg-gray-800 border-blue-600 flex-1"
+                                  />
+                                  <Input
+                                    placeholder="English idea"
+                                    value={idea.en}
+                                    onChange={(e) => updateIdeaText(index, 'en', e.target.value)}
+                                    className="bg-gray-800 border-blue-600 flex-1"
+                                  />
+                                  {newThemeIdeas.length > 1 && (
+                                    <Button
+                                      onClick={() => removeIdea(index)}
+                                      variant="outline"
+                                      size="sm"
+                                      className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={addNewIdea}
+                                variant="outline"
+                                size="sm"
+                                className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+                              >
+                                <Plus className="w-4 h-4 mr-1" />
+                                {t.addIdea}
+                              </Button>
+                              <Button
+                                onClick={saveCustomTheme}
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                {t.saveTheme}
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  setShowCustomThemeCreator(false);
+                                  setNewThemeName({ ro: '', en: '' });
+                                  setNewThemeIdeas([{ ro: '', en: '' }]);
+                                }}
+                                variant="outline"
+                                size="sm"
+                                className="border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white"
+                              >
+                                {t.cancelTheme}
+                              </Button>
                             </div>
                           </div>
                         )}
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* Footer */}
-        <div className="text-center mt-8">
-          <Badge variant="outline" className="border-red-500/30 text-red-400">
-            Made for horror movie enthusiasts 🎬
-          </Badge>
+                        {/* Existing Custom Themes */}
+                        {customThemes.length > 0 && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {customThemes.map((theme) => (
+                              <div key={theme.id} className="flex items-center justify-between space-x-2">
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={theme.id}
+                                    checked={selectedThemes.includes(theme.id)}
+                                    onCheckedChange={() => toggleTheme(theme.id)}
+                                    className="border-blue-500"
+                                  />
+                                  <label
+                                    htmlFor={theme.id}
+                                    className="text-sm text-blue-300 cursor-pointer"
+                                  >
+                                    {theme.name[language]} ({theme.ideas.length} idei)
+                                  </label>
+                                </div>
+                                <Button
+                                  onClick={() => deleteCustomTheme(theme.id)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-400 hover:text-red-300 h-6 w-6 p-0"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-4 mt-6 flex-wrap">
+                  <Button 
+                    onClick={generateBingoCard}
+                    className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/30"
+                    disabled={selectedThemes.length === 0 && importedIdeas.length === 0}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    {t.generateCard}
+                  </Button>
+                  <Button 
+                    onClick={resetCard}
+                    variant="outline"
+                    className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                  >
+                    {t.resetCard}
+                  </Button>
+                  <Button 
+                    onClick={handleDownload}
+                    variant="outline"
+                    className="border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    {t.downloadCard}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Bingo Card */}
+          {bingoCard.length > 0 && (
+            <Card className="bg-gray-900/70 border-red-600/40 backdrop-blur-sm shadow-2xl shadow-red-900/30">
+              <CardContent className="p-6">
+                <div 
+                  id="bingo-card"
+                  className={`grid gap-3 mx-auto max-w-4xl`}
+                  style={{ 
+                    gridTemplateColumns: `repeat(${cardSize}, 1fr)`,
+                    aspectRatio: '1'
+                  }}
+                >
+                  {bingoCard.map((cell, index) => (
+                    <div
+                      key={index}
+                      className={`
+                        relative group border-2 rounded-lg p-3 cursor-pointer transition-all duration-300
+                        ${cell.isChecked 
+                          ? 'bg-gradient-to-br from-red-600 to-red-700 border-red-400 shadow-lg shadow-red-500/30 transform scale-105' 
+                          : 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-600/50 hover:border-red-500/60 hover:bg-gradient-to-br hover:from-gray-700/80 hover:to-gray-800/80 hover:shadow-lg hover:shadow-red-900/20'
+                        }
+                        min-h-[80px] flex flex-col items-center justify-center text-center
+                        backdrop-blur-sm
+                      `}
+                      onClick={() => !cell.isEditing && toggleCell(index)}
+                    >
+                      {cell.isEditing ? (
+                        <div className="w-full space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <Input
+                            value={cell.editedText}
+                            onChange={(e) => updateEditText(index, e.target.value)}
+                            className="text-xs bg-gray-900/80 border-gray-600 text-white"
+                            autoFocus
+                          />
+                          <div className="flex gap-1 justify-center">
+                            <Button
+                              size="sm"
+                              onClick={() => saveEdit(index)}
+                              className="bg-green-600 hover:bg-green-700 h-6 px-2"
+                            >
+                              <Save className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => cancelEdit(index)}
+                              className="border-gray-600 text-gray-400 hover:bg-gray-700 h-6 px-2"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <span className={`text-xs font-medium leading-tight ${cell.isChecked ? 'text-white' : 'text-gray-200'}`}>
+                            {cell.idea[language]}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditing(index);
+                            }}
+                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-gray-400 hover:text-white"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                          </Button>
+                          {cell.isChecked && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center animate-pulse">
+                                <span className="text-2xl">💀</span>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Footer */}
+          <div className="text-center mt-8">
+            <Badge variant="outline" className="border-red-500/30 text-red-400">
+              Made for horror movie enthusiasts 🎬
+            </Badge>
+          </div>
         </div>
       </div>
     </div>
