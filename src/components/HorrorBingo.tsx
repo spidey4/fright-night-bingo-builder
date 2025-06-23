@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, QrCode, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, QrCode, ChevronDown, ChevronUp, Plus, Trash2, FileText } from 'lucide-react';
 import { bingoThemes, BingoIdea } from '@/data/bingoData';
 import StardustLogo from '@/components/StardustLogo';
 import DifficultySlider from '@/components/DifficultySlider';
@@ -12,6 +12,7 @@ import ClicheExcluder from '@/components/ClicheExcluder';
 import MovieSuggester from '@/components/MovieSuggester';
 import VSMode from '@/components/VSMode';
 import QRCodeShare from '@/components/QRCodeShare';
+import IdeaImporter from '@/components/IdeaImporter';
 import { downloadBingoCard } from '@/utils/downloadCard';
 import { suggestRandomMovie } from '@/utils/movieSuggester';
 import { useToast } from '@/hooks/use-toast';
@@ -65,6 +66,8 @@ const HorrorBingo = () => {
   const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
   const [newThemeName, setNewThemeName] = useState({ ro: '', en: '' });
   const [newThemeIdeas, setNewThemeIdeas] = useState<{ ro: string; en: string }[]>([{ ro: '', en: '' }]);
+  const [showIdeaImporter, setShowIdeaImporter] = useState(false);
+  const [importedIdeas, setImportedIdeas] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Additional optional themes
@@ -258,45 +261,53 @@ const HorrorBingo = () => {
   const generateBingoCard = () => {
     let allIdeas: BingoIdea[] = [];
     
-    // Collect ideas from selected main themes
-    selectedThemes.forEach(themeKey => {
-      const theme = bingoThemes[themeKey];
-      if (theme) {
-        allIdeas = [...allIdeas, ...theme.ideas];
-      }
-    });
+    // If we have imported ideas, use those instead
+    if (importedIdeas.length > 0) {
+      allIdeas = importedIdeas.map(idea => ({
+        ro: idea,
+        en: idea
+      }));
+    } else {
+      // Collect ideas from selected main themes
+      selectedThemes.forEach(themeKey => {
+        const theme = bingoThemes[themeKey];
+        if (theme) {
+          allIdeas = [...allIdeas, ...theme.ideas];
+        }
+      });
 
-    // Collect ideas from custom themes
-    customThemes.forEach(customTheme => {
-      if (selectedThemes.includes(customTheme.id)) {
-        allIdeas = [...allIdeas, ...customTheme.ideas];
+      // Collect ideas from custom themes
+      customThemes.forEach(customTheme => {
+        if (selectedThemes.includes(customTheme.id)) {
+          allIdeas = [...allIdeas, ...customTheme.ideas];
+        }
+      });
+      
+      // Add optional theme ideas if selected (3-6 ideas each)
+      if (includeCursedDoll && optionalThemes.cursedDoll) {
+        const dollIdeas = optionalThemes.cursedDoll.ideas.slice(0, 3);
+        allIdeas = [...allIdeas, ...dollIdeas];
       }
-    });
-    
-    // Add optional theme ideas if selected (3-6 ideas each)
-    if (includeCursedDoll && optionalThemes.cursedDoll) {
-      const dollIdeas = optionalThemes.cursedDoll.ideas.slice(0, 3);
-      allIdeas = [...allIdeas, ...dollIdeas];
-    }
-    
-    if (includeJumpscare && optionalThemes.jumpscare) {
-      const jumpscareIdeas = optionalThemes.jumpscare.ideas.slice(0, 4);
-      allIdeas = [...allIdeas, ...jumpscareIdeas];
-    }
-    
-    if (includeGothic && optionalThemes.gothic) {
-      const gothicIdeas = optionalThemes.gothic.ideas.slice(0, 5);
-      allIdeas = [...allIdeas, ...gothicIdeas];
-    }
-    
-    if (includeCult && optionalThemes.cult) {
-      const cultIdeas = optionalThemes.cult.ideas.slice(0, 4);
-      allIdeas = [...allIdeas, ...cultIdeas];
-    }
-    
-    if (includeZombie && optionalThemes.zombie) {
-      const zombieIdeas = optionalThemes.zombie.ideas.slice(0, 5);
-      allIdeas = [...allIdeas, ...zombieIdeas];
+      
+      if (includeJumpscare && optionalThemes.jumpscare) {
+        const jumpscareIdeas = optionalThemes.jumpscare.ideas.slice(0, 4);
+        allIdeas = [...allIdeas, ...jumpscareIdeas];
+      }
+      
+      if (includeGothic && optionalThemes.gothic) {
+        const gothicIdeas = optionalThemes.gothic.ideas.slice(0, 5);
+        allIdeas = [...allIdeas, ...gothicIdeas];
+      }
+      
+      if (includeCult && optionalThemes.cult) {
+        const cultIdeas = optionalThemes.cult.ideas.slice(0, 4);
+        allIdeas = [...allIdeas, ...cultIdeas];
+      }
+      
+      if (includeZombie && optionalThemes.zombie) {
+        const zombieIdeas = optionalThemes.zombie.ideas.slice(0, 5);
+        allIdeas = [...allIdeas, ...zombieIdeas];
+      }
     }
     
     // Remove duplicates
@@ -457,6 +468,25 @@ const HorrorBingo = () => {
     });
   };
 
+  const handleImportIdeas = (ideas: string[]) => {
+    setImportedIdeas(ideas);
+    setShowIdeaImporter(false);
+    
+    // Generate card immediately with imported ideas
+    setTimeout(() => {
+      generateBingoCard();
+    }, 100);
+  };
+
+  const clearImportedIdeas = () => {
+    setImportedIdeas([]);
+    generateBingoCard();
+    toast({
+      title: "Idei șterse",
+      description: "S-a revenit la temele standard.",
+    });
+  };
+
   const toggleCell = (index: number) => {
     setBingoCard(prev => prev.map((cell, i) => 
       i === index ? { ...cell, isChecked: !cell.isChecked } : cell
@@ -572,7 +602,7 @@ const HorrorBingo = () => {
     if (bingoCard.length > 0 && !isSharedCard) {
       generateBingoCard();
     }
-  }, [language, selectedThemes, cardSize, difficulty, excludedIdeas, includeCursedDoll, includeJumpscare, includeGothic, includeCult, includeZombie]);
+  }, [language, selectedThemes, cardSize, difficulty, excludedIdeas, includeCursedDoll, includeJumpscare, includeGothic, includeCult, includeZombie, importedIdeas]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black text-white p-4">
@@ -606,6 +636,24 @@ const HorrorBingo = () => {
               </div>
             </div>
           )}
+
+          {importedIdeas.length > 0 && (
+            <div className="mb-4">
+              <Badge variant="outline" className="border-blue-500/30 text-blue-400 mb-2">
+                Card Custom ({importedIdeas.length} idei)
+              </Badge>
+              <div>
+                <Button
+                  onClick={clearImportedIdeas}
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white"
+                >
+                  Revino la teme standard
+                </Button>
+              </div>
+            </div>
+          )}
           
           <div className="flex gap-2 justify-center flex-wrap mb-6">
             <Button
@@ -615,6 +663,15 @@ const HorrorBingo = () => {
             >
               <Settings className="w-4 h-4 mr-2" />
               {showSettings ? t.hideSettings : t.settings}
+            </Button>
+
+            <Button
+              onClick={() => setShowIdeaImporter(!showIdeaImporter)}
+              variant="outline"
+              className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Import Idei
             </Button>
             
             <Button
@@ -659,6 +716,14 @@ const HorrorBingo = () => {
 
         {/* Feature Panels */}
         <div className="grid gap-6 mb-8">
+          {showIdeaImporter && (
+            <IdeaImporter
+              language={language}
+              onImportIdeas={handleImportIdeas}
+              onClose={() => setShowIdeaImporter(false)}
+            />
+          )}
+
           {showClicheExcluder && (
             <ClicheExcluder
               allIdeas={selectedThemes.flatMap(theme => bingoThemes[theme]?.ideas || [])}
@@ -974,7 +1039,7 @@ const HorrorBingo = () => {
                 <Button 
                   onClick={generateBingoCard}
                   className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/30"
-                  disabled={selectedThemes.length === 0}
+                  disabled={selectedThemes.length === 0 && importedIdeas.length === 0}
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   {t.generateCard}
