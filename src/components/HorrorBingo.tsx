@@ -1,22 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Skull, RefreshCw, Edit3, Save, X, Settings, Download, Filter, Users, Film, QrCode, ChevronDown, ChevronUp, Plus, Trash2, FileText } from 'lucide-react';
 import { bingoThemes, BingoIdea } from '@/data/bingoData';
 import StardustLogo from '@/components/StardustLogo';
-import DifficultySlider from '@/components/DifficultySlider';
 import ClicheExcluder from '@/components/ClicheExcluder';
 import MovieSuggester from '@/components/MovieSuggester';
 import VSMode from '@/components/VSMode';
 import QRCodeShare from '@/components/QRCodeShare';
 import IdeaImporter from '@/components/IdeaImporter';
+import BingoHeader from '@/components/bingo/BingoHeader';
+import BingoSettingsPanel from '@/components/bingo/BingoSettingsPanel';
+import BingoCard from '@/components/bingo/BingoCard';
 import { downloadBingoCard } from '@/utils/downloadCard';
 import { suggestRandomMovie } from '@/utils/movieSuggester';
 import { useToast } from '@/hooks/use-toast';
-import { Checkbox } from '@/components/ui/checkbox';
 import { CheckedState } from '@radix-ui/react-checkbox';
 
 type Language = 'ro' | 'en';
@@ -241,7 +237,7 @@ const HorrorBingo = () => {
         setShowSettings(false);
         
         toast({
-          title: t.sharedCard,
+          title: "Card Partajat",
           description: `Card ${size}x${size} încărcat cu succes!`,
         });
       } catch (error) {
@@ -259,6 +255,7 @@ const HorrorBingo = () => {
   }, []);
 
   const generateBingoCard = () => {
+    // card generation logic
     let allIdeas: BingoIdea[] = [];
     
     // If we have imported ideas, use those instead
@@ -284,6 +281,50 @@ const HorrorBingo = () => {
       });
       
       // Add optional theme ideas if selected (3-6 ideas each)
+      const optionalThemes = {
+        cursedDoll: {
+          ideas: [
+            { ro: 'Păpușa se mișcă singură', en: 'Doll moves by itself' },
+            { ro: 'Ochii păpușii te urmăresc', en: 'Doll eyes follow you' },
+            { ro: 'Păpușa vorbește în timpul nopții', en: 'Doll talks at night' }
+          ]
+        },
+        jumpscare: {
+          ideas: [
+            { ro: 'Oglinda se sparge brusc', en: 'Mirror suddenly breaks' },
+            { ro: 'Mâna iese din întuneric', en: 'Hand emerges from darkness' },
+            { ro: 'Șoaptă din spatele personajului', en: 'Whisper behind character' },
+            { ro: 'Ceva cade din dulap', en: 'Something falls from closet' }
+          ]
+        },
+        gothic: {
+          ideas: [
+            { ro: 'Casă victoriana în paragină', en: 'Decaying Victorian house' },
+            { ro: 'Portrete care te privesc', en: 'Portraits that watch you' },
+            { ro: 'Cimitir în ceață', en: 'Foggy cemetery' },
+            { ro: 'Pasaje secrete în ziduri', en: 'Secret passages in walls' },
+            { ro: 'Muzică de pian fantomatică', en: 'Ghostly piano music' }
+          ]
+        },
+        cult: {
+          ideas: [
+            { ro: 'Ritual în pădure', en: 'Forest ritual' },
+            { ro: 'Simboluri ciudate pe ziduri', en: 'Strange symbols on walls' },
+            { ro: 'Cântece în limbi străine', en: 'Chanting in foreign tongues' },
+            { ro: 'Sacrificiu animal', en: 'Animal sacrifice' }
+          ]
+        },
+        zombie: {
+          ideas: [
+            { ro: 'Hoardă de zombi', en: 'Zombie horde' },
+            { ro: 'Refugiu improvizat', en: 'Makeshift shelter' },
+            { ro: 'Hrană pe terminate', en: 'Running out of food' },
+            { ro: 'Unul dintre grup e infectat', en: 'One of the group is infected' },
+            { ro: 'Radio cu mesaje de urgență', en: 'Radio with emergency broadcasts' }
+          ]
+        }
+      };
+      
       if (includeCursedDoll && optionalThemes.cursedDoll) {
         const dollIdeas = optionalThemes.cursedDoll.ideas.slice(0, 3);
         allIdeas = [...allIdeas, ...dollIdeas];
@@ -318,44 +359,37 @@ const HorrorBingo = () => {
     // Filter out excluded ideas
     let filteredIdeas = uniqueIdeas.filter(idea => !excludedIdeas.includes(idea[language]));
     
-    // Improve difficulty logic - sort by complexity/rarity
+    // Improve difficulty logic
     const sortedIdeas = [...filteredIdeas].sort((a, b) => {
       const aText = a[language].toLowerCase();
       const bText = b[language].toLowerCase();
       
-      // Simple heuristic: longer text or specific words indicate higher difficulty
       const aComplexity = aText.length + (aText.includes('specific') ? 10 : 0) + (aText.includes('exact') ? 10 : 0);
       const bComplexity = bText.length + (bText.includes('specific') ? 10 : 0) + (bText.includes('exact') ? 10 : 0);
       
       return aComplexity - bComplexity;
     });
     
-    // Apply difficulty filter with improved logic
+    // Apply difficulty filter
     let selectedPool: BingoIdea[] = [];
     if (difficulty <= 25) {
-      // Easy - most common clichés
       selectedPool = sortedIdeas.slice(0, Math.ceil(sortedIdeas.length * 0.4));
     } else if (difficulty <= 50) {
-      // Medium - mix of common and moderate
       selectedPool = sortedIdeas.slice(0, Math.ceil(sortedIdeas.length * 0.7));
     } else if (difficulty <= 75) {
-      // Hard - moderate to rare
       selectedPool = sortedIdeas.slice(Math.floor(sortedIdeas.length * 0.3));
     } else {
-      // Expert - only the rarest/most specific
       selectedPool = sortedIdeas.slice(Math.floor(sortedIdeas.length * 0.6));
     }
     
     const cardCells = cardSize * cardSize;
     const selectedIdeas: BingoIdea[] = [];
 
-    // Shuffle and select ideas
     const shuffledPool = [...selectedPool].sort(() => Math.random() - 0.5);
     for (let i = 0; i < cardCells && i < shuffledPool.length; i++) {
       selectedIdeas.push(shuffledPool[i]);
     }
 
-    // Fill remaining cells if needed
     while (selectedIdeas.length < cardCells) {
       selectedIdeas.push({
         ro: "Spațiu liber",
@@ -372,11 +406,12 @@ const HorrorBingo = () => {
     
     setIsSharedCard(false);
     
-    // Clear URL parameters when generating new card
     if (window.location.search) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   };
+
+  // all handler functions
 
   const toggleTheme = (themeKey: string) => {
     setSelectedThemes(prev => 
@@ -386,39 +421,24 @@ const HorrorBingo = () => {
     );
   };
 
-  const handleOptionalThemeChange = (themeName: string, checked: CheckedState) => {
-    const isChecked = checked === true;
+  const handleOptionalThemeChange = (themeName: string, checked: boolean) => {
     switch (themeName) {
       case 'cursedDoll':
-        setIncludeCursedDoll(isChecked);
+        setIncludeCursedDoll(checked);
         break;
       case 'jumpscare':
-        setIncludeJumpscare(isChecked);
+        setIncludeJumpscare(checked);
         break;
       case 'gothic':
-        setIncludeGothic(isChecked);
+        setIncludeGothic(checked);
         break;
       case 'cult':
-        setIncludeCult(isChecked);
+        setIncludeCult(checked);
         break;
       case 'zombie':
-        setIncludeZombie(isChecked);
+        setIncludeZombie(checked);
         break;
     }
-  };
-
-  const addNewIdea = () => {
-    setNewThemeIdeas([...newThemeIdeas, { ro: '', en: '' }]);
-  };
-
-  const removeIdea = (index: number) => {
-    setNewThemeIdeas(newThemeIdeas.filter((_, i) => i !== index));
-  };
-
-  const updateIdeaText = (index: number, lang: 'ro' | 'en', text: string) => {
-    const updatedIdeas = [...newThemeIdeas];
-    updatedIdeas[index][lang] = text;
-    setNewThemeIdeas(updatedIdeas);
   };
 
   const saveCustomTheme = () => {
@@ -472,7 +492,6 @@ const HorrorBingo = () => {
     setImportedIdeas(ideas);
     setShowIdeaImporter(false);
     
-    // Generate card immediately with imported ideas
     setTimeout(() => {
       generateBingoCard();
     }, 100);
@@ -545,7 +564,7 @@ const HorrorBingo = () => {
     const movie = suggestRandomMovie(randomTheme, platforms);
     if (movie) {
       toast({
-        title: t.suggestedMovie,
+        title: "Film sugerat",
         description: `${movie.title} (${movie.year}) - ${movie.platforms.join(', ')}`,
       });
       generateBingoCard();
@@ -588,7 +607,7 @@ const HorrorBingo = () => {
     
     const winnerName = playerNumber === 1 ? updatedState.player1.name : updatedState.player2.name;
     toast({
-      title: `${t.winner}: ${winnerName}!`,
+      title: `Câștigător: ${winnerName}!`,
       description: `Runda ${vsGameState.currentRound} câștigată!`,
     });
     
@@ -608,111 +627,21 @@ const HorrorBingo = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black text-white p-4">
       <StardustLogo />
       <div className="max-w-6xl mx-auto pt-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Skull className="w-12 h-12 text-red-500" />
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent">
-              {t.title}
-            </h1>
-            <Skull className="w-12 h-12 text-red-500" />
-          </div>
-          <p className="text-xl text-gray-300 mb-4">{t.subtitle}</p>
-          <p className="text-sm text-pink-300 italic mb-6">✨ {t.madeFor} ✨</p>
-          
-          {isSharedCard && (
-            <div className="mb-4">
-              <Badge variant="outline" className="border-green-500/30 text-green-400 mb-2">
-                {t.sharedCard}
-              </Badge>
-              <div>
-                <Button
-                  onClick={generateBingoCard}
-                  variant="outline"
-                  className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
-                >
-                  {t.createNew}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {importedIdeas.length > 0 && (
-            <div className="mb-4">
-              <Badge variant="outline" className="border-blue-500/30 text-blue-400 mb-2">
-                Card Custom ({importedIdeas.length} idei)
-              </Badge>
-              <div>
-                <Button
-                  onClick={clearImportedIdeas}
-                  variant="outline"
-                  size="sm"
-                  className="border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white"
-                >
-                  Revino la teme standard
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          <div className="flex gap-2 justify-center flex-wrap mb-6">
-            <Button
-              onClick={() => setShowSettings(!showSettings)}
-              variant="outline"
-              className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              {showSettings ? t.hideSettings : t.settings}
-            </Button>
-
-            <Button
-              onClick={() => setShowIdeaImporter(!showIdeaImporter)}
-              variant="outline"
-              className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Import Idei
-            </Button>
-            
-            <Button
-              onClick={() => setShowClicheExcluder(!showClicheExcluder)}
-              variant="outline"
-              className="border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white"
-            >
-              <Filter className="w-4 h-4 mr-2" />
-              {t.excludeCliches}
-            </Button>
-            
-            <Button
-              onClick={() => setShowMovieSuggester(!showMovieSuggester)}
-              variant="outline"
-              className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
-            >
-              <Film className="w-4 h-4 mr-2" />
-              {t.movieSuggester}
-            </Button>
-            
-            <Button
-              onClick={() => setShowVSMode(!showVSMode)}
-              variant="outline"
-              className="border-green-500 text-green-400 hover:bg-green-500 hover:text-white"
-            >
-              <Users className="w-4 h-4 mr-2" />
-              {t.vsMode}
-            </Button>
-
-            {bingoCard.length > 0 && (
-              <Button
-                onClick={() => setShowQRCode(!showQRCode)}
-                variant="outline"
-                className="border-orange-500 text-orange-400 hover:bg-orange-500 hover:text-white"
-              >
-                <QrCode className="w-4 h-4 mr-2" />
-                {t.qrCode}
-              </Button>
-            )}
-          </div>
-        </div>
+        <BingoHeader
+          language={language}
+          isSharedCard={isSharedCard}
+          importedIdeas={importedIdeas}
+          showSettings={showSettings}
+          onToggleSettings={() => setShowSettings(!showSettings)}
+          onToggleIdeaImporter={() => setShowIdeaImporter(!showIdeaImporter)}
+          onToggleClicheExcluder={() => setShowClicheExcluder(!showClicheExcluder)}
+          onToggleMovieSuggester={() => setShowMovieSuggester(!showMovieSuggester)}
+          onToggleVSMode={() => setShowVSMode(!showVSMode)}
+          onToggleQRCode={() => setShowQRCode(!showQRCode)}
+          onCreateNew={generateBingoCard}
+          onClearImportedIdeas={clearImportedIdeas}
+          hasBingoCard={bingoCard.length > 0}
+        />
 
         {/* Feature Panels */}
         <div className="grid gap-6 mb-8">
@@ -764,389 +693,49 @@ const HorrorBingo = () => {
 
         {/* Settings Panel */}
         {showSettings && (
-          <Card className="mb-8 bg-gray-900/70 border-red-600/40 backdrop-blur-sm shadow-lg shadow-red-900/20">
-            <CardHeader>
-              <CardTitle className="text-red-400 flex items-center gap-2">
-                <Skull className="w-5 h-5" />
-                {t.settings}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-300">
-                    {t.language}
-                  </label>
-                  <Select value={language} onValueChange={(value) => setLanguage(value as Language)}>
-                    <SelectTrigger className="bg-gray-800/80 border-gray-600 text-white hover:border-red-500/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-600">
-                      <SelectItem value="ro">Română</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-300">
-                    {t.cardSize}
-                  </label>
-                  <Select value={cardSize.toString()} onValueChange={(value) => setCardSize(parseInt(value) as CardSize)}>
-                    <SelectTrigger className="bg-gray-800/80 border-gray-600 text-white hover:border-red-500/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-600">
-                      <SelectItem value="3">3x3</SelectItem>
-                      <SelectItem value="4">4x4</SelectItem>
-                      <SelectItem value="5">5x5</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <DifficultySlider
-                    difficulty={difficulty}
-                    onDifficultyChange={setDifficulty}
-                    language={language}
-                  />
-                </div>
-              </div>
-
-              {/* Theme Selection */}
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-300">
-                    {t.themes}
-                  </label>
-                  <Button
-                    onClick={() => setShowThemeSelector(!showThemeSelector)}
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-400 hover:text-white"
-                  >
-                    {showThemeSelector ? (
-                      <>
-                        <ChevronUp className="w-4 h-4 mr-1" />
-                        {t.hideThemes}
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-4 h-4 mr-1" />
-                        {t.showThemes}
-                      </>
-                    )}
-                  </Button>
-                </div>
-                
-                {selectedThemes.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {selectedThemes.map(themeKey => (
-                      <Badge key={themeKey} variant="outline" className="border-red-500/30 text-red-400">
-                        {bingoThemes[themeKey]?.name[language] || themeKey}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-                
-                <p className="text-xs text-gray-400 mb-3">{t.selectMultiple}</p>
-
-                {showThemeSelector && (
-                  <div className="space-y-6">
-                    {/* Main Themes */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-gray-800/50 rounded-lg">
-                      {Object.entries(bingoThemes).map(([key, theme]) => (
-                        <div key={key} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={key}
-                            checked={selectedThemes.includes(key)}
-                            onCheckedChange={() => toggleTheme(key)}
-                            className="border-gray-600"
-                          />
-                          <label
-                            htmlFor={key}
-                            className="text-sm text-gray-200 cursor-pointer"
-                          >
-                            {theme.name[language]}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Optional Themes */}
-                    <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
-                      <h4 className="text-purple-300 font-medium mb-3">{t.optionalThemes}</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {Object.entries(optionalThemes).map(([key, theme]) => {
-                          const isChecked = key === 'cursedDoll' ? includeCursedDoll :
-                                           key === 'jumpscare' ? includeJumpscare :
-                                           key === 'gothic' ? includeGothic :
-                                           key === 'cult' ? includeCult :
-                                           key === 'zombie' ? includeZombie : false;
-                          
-                          return (
-                            <div key={key} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={key}
-                                checked={isChecked}
-                                onCheckedChange={(checked) => handleOptionalThemeChange(key, checked)}
-                                className="border-purple-500"
-                              />
-                              <label
-                                htmlFor={key}
-                                className="text-sm text-purple-300 cursor-pointer"
-                              >
-                                {theme.name[language]} ({theme.ideas.length} idei)
-                              </label>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Custom Themes */}
-                    <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-blue-300 font-medium">{t.customThemes}</h4>
-                        <Button
-                          onClick={() => setShowCustomThemeCreator(!showCustomThemeCreator)}
-                          variant="outline"
-                          size="sm"
-                          className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          {t.createCustomTheme}
-                        </Button>
-                      </div>
-
-                      {/* Custom Theme Creator */}
-                      {showCustomThemeCreator && (
-                        <div className="mb-4 p-3 bg-blue-800/20 rounded border border-blue-600/30">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                            <Input
-                              placeholder="Nume temă (română)"
-                              value={newThemeName.ro}
-                              onChange={(e) => setNewThemeName({...newThemeName, ro: e.target.value})}
-                              className="bg-gray-800 border-blue-600"
-                            />
-                            <Input
-                              placeholder="Theme name (English)"
-                              value={newThemeName.en}
-                              onChange={(e) => setNewThemeName({...newThemeName, en: e.target.value})}
-                              className="bg-gray-800 border-blue-600"
-                            />
-                          </div>
-                          
-                          <div className="space-y-2 mb-3">
-                            {newThemeIdeas.map((idea, index) => (
-                              <div key={index} className="flex gap-2 items-center">
-                                <Input
-                                  placeholder="Idee română"
-                                  value={idea.ro}
-                                  onChange={(e) => updateIdeaText(index, 'ro', e.target.value)}
-                                  className="bg-gray-800 border-blue-600 flex-1"
-                                />
-                                <Input
-                                  placeholder="English idea"
-                                  value={idea.en}
-                                  onChange={(e) => updateIdeaText(index, 'en', e.target.value)}
-                                  className="bg-gray-800 border-blue-600 flex-1"
-                                />
-                                {newThemeIdeas.length > 1 && (
-                                  <Button
-                                    onClick={() => removeIdea(index)}
-                                    variant="outline"
-                                    size="sm"
-                                    className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={addNewIdea}
-                              variant="outline"
-                              size="sm"
-                              className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
-                            >
-                              <Plus className="w-4 h-4 mr-1" />
-                              {t.addIdea}
-                            </Button>
-                            <Button
-                              onClick={saveCustomTheme}
-                              size="sm"
-                              className="bg-blue-600 hover:bg-blue-700"
-                            >
-                              {t.saveTheme}
-                            </Button>
-                            <Button
-                              onClick={() => {
-                                setShowCustomThemeCreator(false);
-                                setNewThemeName({ ro: '', en: '' });
-                                setNewThemeIdeas([{ ro: '', en: '' }]);
-                              }}
-                              variant="outline"
-                              size="sm"
-                              className="border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white"
-                            >
-                              {t.cancelTheme}
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Existing Custom Themes */}
-                      {customThemes.length > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {customThemes.map((theme) => (
-                            <div key={theme.id} className="flex items-center justify-between space-x-2">
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={theme.id}
-                                  checked={selectedThemes.includes(theme.id)}
-                                  onCheckedChange={() => toggleTheme(theme.id)}
-                                  className="border-blue-500"
-                                />
-                                <label
-                                  htmlFor={theme.id}
-                                  className="text-sm text-blue-300 cursor-pointer"
-                                >
-                                  {theme.name[language]} ({theme.ideas.length} idei)
-                                </label>
-                              </div>
-                              <Button
-                                onClick={() => deleteCustomTheme(theme.id)}
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-400 hover:text-red-300 h-6 w-6 p-0"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-4 mt-6 flex-wrap">
-                <Button 
-                  onClick={generateBingoCard}
-                  className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/30"
-                  disabled={selectedThemes.length === 0 && importedIdeas.length === 0}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  {t.generateCard}
-                </Button>
-                <Button 
-                  onClick={resetCard}
-                  variant="outline"
-                  className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
-                >
-                  {t.resetCard}
-                </Button>
-                <Button 
-                  onClick={handleDownload}
-                  variant="outline"
-                  className="border-gray-500 text-gray-400 hover:bg-gray-500 hover:text-white"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  {t.downloadCard}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <BingoSettingsPanel
+            language={language}
+            selectedThemes={selectedThemes}
+            cardSize={cardSize}
+            difficulty={difficulty}
+            showThemeSelector={showThemeSelector}
+            importedIdeas={importedIdeas}
+            onLanguageChange={setLanguage}
+            onCardSizeChange={setCardSize}
+            onDifficultyChange={setDifficulty}
+            onToggleThemeSelector={() => setShowThemeSelector(!showThemeSelector)}
+            onToggleTheme={toggleTheme}
+            onGenerateCard={generateBingoCard}
+            onResetCard={resetCard}
+            onDownloadCard={handleDownload}
+            includeCursedDoll={includeCursedDoll}
+            includeJumpscare={includeJumpscare}
+            includeGothic={includeGothic}
+            includeCult={includeCult}
+            includeZombie={includeZombie}
+            onOptionalThemeChange={handleOptionalThemeChange}
+            customThemes={customThemes}
+            onDeleteCustomTheme={deleteCustomTheme}
+            showCustomThemeCreator={showCustomThemeCreator}
+            onToggleCustomThemeCreator={() => setShowCustomThemeCreator(!showCustomThemeCreator)}
+            newThemeName={newThemeName}
+            onNewThemeNameChange={setNewThemeName}
+            newThemeIdeas={newThemeIdeas}
+            onNewThemeIdeasChange={setNewThemeIdeas}
+            onSaveCustomTheme={saveCustomTheme}
+          />
         )}
 
-        {/* Bingo Card */}
-        {bingoCard.length > 0 && (
-          <Card className="bg-gray-900/70 border-red-600/40 backdrop-blur-sm shadow-2xl shadow-red-900/30">
-            <CardContent className="p-6">
-              <div 
-                id="bingo-card"
-                className={`grid gap-3 mx-auto max-w-4xl`}
-                style={{ 
-                  gridTemplateColumns: `repeat(${cardSize}, 1fr)`,
-                  aspectRatio: '1'
-                }}
-              >
-                {bingoCard.map((cell, index) => (
-                  <div
-                    key={index}
-                    className={`
-                      relative group border-2 rounded-lg p-3 cursor-pointer transition-all duration-300
-                      ${cell.isChecked 
-                        ? 'bg-gradient-to-br from-red-600 to-red-700 border-red-400 shadow-lg shadow-red-500/30 transform scale-105' 
-                        : 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-600/50 hover:border-red-500/60 hover:bg-gradient-to-br hover:from-gray-700/80 hover:to-gray-800/80 hover:shadow-lg hover:shadow-red-900/20'
-                      }
-                      min-h-[80px] flex flex-col items-center justify-center text-center
-                      backdrop-blur-sm
-                    `}
-                    onClick={() => !cell.isEditing && toggleCell(index)}
-                  >
-                    {cell.isEditing ? (
-                      <div className="w-full space-y-2" onClick={(e) => e.stopPropagation()}>
-                        <Input
-                          value={cell.editedText}
-                          onChange={(e) => updateEditText(index, e.target.value)}
-                          className="text-xs bg-gray-900/80 border-gray-600 text-white"
-                          autoFocus
-                        />
-                        <div className="flex gap-1 justify-center">
-                          <Button
-                            size="sm"
-                            onClick={() => saveEdit(index)}
-                            className="bg-green-600 hover:bg-green-700 h-6 px-2"
-                          >
-                            <Save className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => cancelEdit(index)}
-                            className="border-gray-600 text-gray-400 hover:bg-gray-700 h-6 px-2"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <span className={`text-xs font-medium leading-tight ${cell.isChecked ? 'text-white' : 'text-gray-200'}`}>
-                          {cell.idea[language]}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startEditing(index);
-                          }}
-                          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-gray-400 hover:text-white"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                        </Button>
-                        {cell.isChecked && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center animate-pulse">
-                              <span className="text-2xl">💀</span>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <BingoCard
+          bingoCard={bingoCard}
+          cardSize={cardSize}
+          language={language}
+          onToggleCell={toggleCell}
+          onStartEditing={startEditing}
+          onSaveEdit={saveEdit}
+          onCancelEdit={cancelEdit}
+          onUpdateEditText={updateEditText}
+        />
 
         {/* Footer */}
         <div className="text-center mt-8">
