@@ -255,15 +255,17 @@ const HorrorBingo = () => {
   }, []);
 
   const generateBingoCard = () => {
-    // card generation logic
+    console.log('Generating card with imported ideas:', importedIdeas.length);
+    
     let allIdeas: BingoIdea[] = [];
     
-    // If we have imported ideas, use those instead
+    // If we have imported ideas, use those EXCLUSIVELY
     if (importedIdeas.length > 0) {
       allIdeas = importedIdeas.map(idea => ({
         ro: idea,
         en: idea
       }));
+      console.log('Using imported ideas exclusively:', allIdeas.length);
     } else {
       // Collect ideas from selected main themes
       selectedThemes.forEach(themeKey => {
@@ -351,7 +353,7 @@ const HorrorBingo = () => {
       }
     }
     
-    // Remove duplicates
+    // Remove duplicates only for standard themes
     const uniqueIdeas = allIdeas.filter((idea, index, self) => 
       index === self.findIndex(i => i[language] === idea[language])
     );
@@ -359,11 +361,26 @@ const HorrorBingo = () => {
     // Filter out excluded ideas
     let filteredIdeas = uniqueIdeas.filter(idea => !excludedIdeas.includes(idea[language]));
     
-    // Apply difficulty filtering only for standard themes, not for imported ideas
-    let selectedPool: BingoIdea[] = [];
+    // Apply difficulty filtering for standard themes
+    const cardCells = cardSize * cardSize;
+    console.log(`Card needs ${cardCells} cells, available ideas: ${allIdeas.length}`);
+    
+    let selectedIdeas: BingoIdea[] = [];
+    
     if (importedIdeas.length > 0) {
-      // For imported ideas, use all available ideas without difficulty filtering
-      selectedPool = filteredIdeas;
+      // For imported ideas, use them directly without any filtering
+      const shuffledIdeas = [...allIdeas].sort(() => Math.random() - 0.5);
+      selectedIdeas = shuffledIdeas.slice(0, cardCells);
+      
+      // If we don't have enough imported ideas, fill the rest with "Spațiu liber"
+      while (selectedIdeas.length < cardCells) {
+        selectedIdeas.push({
+          ro: "Spațiu liber",
+          en: "Free space"
+        });
+      }
+      
+      console.log('Selected ideas from imported:', selectedIdeas.length);
     } else {
       // Improve difficulty logic for standard themes
       const sortedIdeas = [...filteredIdeas].sort((a, b) => {
@@ -386,21 +403,18 @@ const HorrorBingo = () => {
       } else {
         selectedPool = sortedIdeas.slice(Math.floor(sortedIdeas.length * 0.6));
       }
-    }
-    
-    const cardCells = cardSize * cardSize;
-    const selectedIdeas: BingoIdea[] = [];
 
-    const shuffledPool = [...selectedPool].sort(() => Math.random() - 0.5);
-    for (let i = 0; i < cardCells && i < shuffledPool.length; i++) {
-      selectedIdeas.push(shuffledPool[i]);
-    }
+      const shuffledPool = [...selectedPool].sort(() => Math.random() - 0.5);
+      for (let i = 0; i < cardCells && i < shuffledPool.length; i++) {
+        selectedIdeas.push(shuffledPool[i]);
+      }
 
-    while (selectedIdeas.length < cardCells) {
-      selectedIdeas.push({
-        ro: "Spațiu liber",
-        en: "Free space"
-      });
+      while (selectedIdeas.length < cardCells) {
+        selectedIdeas.push({
+          ro: "Spațiu liber",
+          en: "Free space"
+        });
+      }
     }
 
     setBingoCard(selectedIdeas.map(idea => ({
