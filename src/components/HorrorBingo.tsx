@@ -359,27 +359,33 @@ const HorrorBingo = () => {
     // Filter out excluded ideas
     let filteredIdeas = uniqueIdeas.filter(idea => !excludedIdeas.includes(idea[language]));
     
-    // Improve difficulty logic
-    const sortedIdeas = [...filteredIdeas].sort((a, b) => {
-      const aText = a[language].toLowerCase();
-      const bText = b[language].toLowerCase();
-      
-      const aComplexity = aText.length + (aText.includes('specific') ? 10 : 0) + (aText.includes('exact') ? 10 : 0);
-      const bComplexity = bText.length + (bText.includes('specific') ? 10 : 0) + (bText.includes('exact') ? 10 : 0);
-      
-      return aComplexity - bComplexity;
-    });
-    
-    // Apply difficulty filter
+    // Apply difficulty filtering only for standard themes, not for imported ideas
     let selectedPool: BingoIdea[] = [];
-    if (difficulty <= 25) {
-      selectedPool = sortedIdeas.slice(0, Math.ceil(sortedIdeas.length * 0.4));
-    } else if (difficulty <= 50) {
-      selectedPool = sortedIdeas.slice(0, Math.ceil(sortedIdeas.length * 0.7));
-    } else if (difficulty <= 75) {
-      selectedPool = sortedIdeas.slice(Math.floor(sortedIdeas.length * 0.3));
+    if (importedIdeas.length > 0) {
+      // For imported ideas, use all available ideas without difficulty filtering
+      selectedPool = filteredIdeas;
     } else {
-      selectedPool = sortedIdeas.slice(Math.floor(sortedIdeas.length * 0.6));
+      // Improve difficulty logic for standard themes
+      const sortedIdeas = [...filteredIdeas].sort((a, b) => {
+        const aText = a[language].toLowerCase();
+        const bText = b[language].toLowerCase();
+        
+        const aComplexity = aText.length + (aText.includes('specific') ? 10 : 0) + (aText.includes('exact') ? 10 : 0);
+        const bComplexity = bText.length + (bText.includes('specific') ? 10 : 0) + (bText.includes('exact') ? 10 : 0);
+        
+        return aComplexity - bComplexity;
+      });
+      
+      // Apply difficulty filter
+      if (difficulty <= 25) {
+        selectedPool = sortedIdeas.slice(0, Math.ceil(sortedIdeas.length * 0.4));
+      } else if (difficulty <= 50) {
+        selectedPool = sortedIdeas.slice(0, Math.ceil(sortedIdeas.length * 0.7));
+      } else if (difficulty <= 75) {
+        selectedPool = sortedIdeas.slice(Math.floor(sortedIdeas.length * 0.3));
+      } else {
+        selectedPool = sortedIdeas.slice(Math.floor(sortedIdeas.length * 0.6));
+      }
     }
     
     const cardCells = cardSize * cardSize;
